@@ -1,0 +1,12 @@
+<library path="src">
+  <class name="Calibration GUI" type="rqt_calibration_gui.calibrationGUI.CalibrationGUI" base_class_type="rqt_gui_py::Plugin">
+    <description>
+      A Python GUI plugin for displaying calibration information and steps for testbeds.
+    </description>
+    <qtgui>
+      <label>Calibration GUI</label>
+      <icon type="theme">system-help</icon>
+      <statustip>GUI for calibration of testbeds</statustip>
+    </qtgui>
+  </class>
+</library>
