@@ -32,3 +32,35 @@ class CalibrationGUI(Plugin):
       self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
     context.add_widget(self._widget)
 
+    # Setup button event listeners
+    self._widget.importButton.clicked[bool].connect(self.handle_import_clicked)
+    self._widget.calibrateInternalCameraButton.clicked[bool].connect(self.handle_internal_camera_calibration_clicked)
+    self._widget.cameraPoseButton.clicked[bool].connect(self.handle_calibrate_camera_pose_clicked)
+    self._widget.recordButton.clicked[bool].connect(self.handle_record_touch_pt_clicked)
+
+    # Setup combo box event listeners
+    self._widget.testBedComboBox.currentIndexChanged.connect(self.handle_testbed_change)
+    self._widget.armComboBox.currentIndexChanged.connect(self.handle_arm_change)
+    self._widget.cameraComboBox.currentIndexChanged.connect(self.handle_camera_change)
+  
+  def handle_import_clicked(self):
+    print("importing internal camera calibration settings")
+
+  def handle_internal_camera_calibration_clicked(self):
+    print("calibrating internal camera")
+
+  def handle_calibrate_camera_pose_clicked(self):
+    print("calibrating camera pose")
+
+  def handle_record_touch_pt_clicked(self):
+    print("recording touchpoint")
+
+  def handle_testbed_change(self, i):
+      print("Testbed index is:", i, "Value:", self._widget.testBedComboBox.currentText())
+
+  def handle_arm_change(self, i):
+      print("Arm index is:", i, "Value:", self._widget.armComboBox.currentText())
+
+  def handle_camera_change(self, i):
+      print("Camera index is:", i, "Value:", self._widget.cameraComboBox.currentText())
+

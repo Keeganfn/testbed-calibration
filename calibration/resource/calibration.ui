@@ -41,7 +41,39 @@
             <enum>QLayout::SetDefaultConstraint</enum>
            </property>
            <item alignment="Qt::AlignHCenter">
-            <widget class="QPushButton" name="calibrateInternalCameraButton_2">
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>Choose one of the following</string>
+             </property>
+            </widget>
+           </item>
+           <item alignment="Qt::AlignHCenter">
+            <widget class="QPushButton" name="importButton">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>200</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>400</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Import Previous Settings</string>
+             </property>
+            </widget>
+           </item>
+           <item alignment="Qt::AlignHCenter">
+            <widget class="QPushButton" name="calibrateInternalCameraButton">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -79,14 +111,14 @@
             <enum>QLayout::SetDefaultConstraint</enum>
            </property>
            <item alignment="Qt::AlignHCenter">
-            <widget class="QLabel" name="zDistLabel_2">
+            <widget class="QLabel" name="zDistLabel">
              <property name="text">
               <string>Set the Z distance from the table to the camera if not close enough</string>
              </property>
             </widget>
            </item>
            <item alignment="Qt::AlignHCenter">
-            <widget class="QDoubleSpinBox" name="zDistBox_2">
+            <widget class="QDoubleSpinBox" name="zDistBox">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -102,7 +134,7 @@
       </layout>
      </item>
      <item row="0" column="0" alignment="Qt::AlignHCenter">
-      <widget class="QLabel" name="selectLeftLabel_2">
+      <widget class="QLabel" name="selectLeftLabel">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
          <horstretch>0</horstretch>
@@ -134,7 +166,7 @@
        <item>
         <layout class="QVBoxLayout" name="verticalLayout_12">
          <item alignment="Qt::AlignHCenter">
-          <widget class="QPushButton" name="cameraPoseButton_2">
+          <widget class="QPushButton" name="cameraPoseButton">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -163,7 +195,7 @@
        <item>
         <layout class="QVBoxLayout" name="verticalLayout_13">
          <item alignment="Qt::AlignHCenter">
-          <widget class="QLabel" name="arucoLabel_2">
+          <widget class="QLabel" name="arucoLabel">
            <property name="text">
             <string>Put in the ArUco markers on all 4 corners to callibrate the camera</string>
            </property>
@@ -174,7 +206,7 @@
       </layout>
      </item>
      <item row="3" column="0" alignment="Qt::AlignHCenter">
-      <widget class="QLabel" name="touchPtLeftLabel_2">
+      <widget class="QLabel" name="touchPtLeftLabel">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
          <horstretch>0</horstretch>
@@ -199,7 +231,7 @@
       </widget>
      </item>
      <item row="2" column="0" alignment="Qt::AlignHCenter">
-      <widget class="QLabel" name="cameraPoseLeftLabel_2">
+      <widget class="QLabel" name="cameraPoseLeftLabel">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
          <horstretch>0</horstretch>
@@ -224,7 +256,7 @@
       </widget>
      </item>
      <item row="1" column="0" alignment="Qt::AlignHCenter">
-      <widget class="QLabel" name="internalCameraLeftLabel_2">
+      <widget class="QLabel" name="internalCameraLeftLabel">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
          <horstretch>0</horstretch>
@@ -256,14 +288,14 @@
        <item>
         <layout class="QVBoxLayout" name="verticalLayout_14">
          <item alignment="Qt::AlignHCenter|Qt::AlignBottom">
-          <widget class="QLabel" name="selectTestbedModel_2">
+          <widget class="QLabel" name="selectTestbedModel">
            <property name="text">
             <string>Select Testbed Model</string>
            </property>
           </widget>
          </item>
          <item alignment="Qt::AlignHCenter">
-          <widget class="QComboBox" name="testBedComboBox_2">
+          <widget class="QComboBox" name="testBedComboBox">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -295,14 +327,14 @@
           </widget>
          </item>
          <item alignment="Qt::AlignHCenter|Qt::AlignBottom">
-          <widget class="QLabel" name="selectCameraLabel_2">
+          <widget class="QLabel" name="selectCameraLabel">
            <property name="text">
             <string>Select Camera</string>
            </property>
           </widget>
          </item>
          <item alignment="Qt::AlignHCenter">
-          <widget class="QComboBox" name="cameraComboBox_2">
+          <widget class="QComboBox" name="cameraComboBox">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -348,7 +380,7 @@
        <item>
         <layout class="QVBoxLayout" name="verticalLayout_15">
          <item alignment="Qt::AlignHCenter|Qt::AlignBottom">
-          <widget class="QLabel" name="selectArmLabel_2">
+          <widget class="QLabel" name="selectArmLabel">
            <property name="maximumSize">
             <size>
              <width>16777215</width>
@@ -361,7 +393,7 @@
           </widget>
          </item>
          <item alignment="Qt::AlignHCenter">
-          <widget class="QComboBox" name="armComboBox_2">
+          <widget class="QComboBox" name="armComboBox">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -393,14 +425,14 @@
           </widget>
          </item>
          <item alignment="Qt::AlignHCenter|Qt::AlignBottom">
-          <widget class="QLabel" name="cameraStatusLabel_2">
+          <widget class="QLabel" name="cameraStatusLabel">
            <property name="text">
             <string>Camera Status</string>
            </property>
           </widget>
          </item>
          <item alignment="Qt::AlignHCenter">
-          <widget class="QTableWidget" name="tableWidget_2">
+          <widget class="QTableWidget" name="tableWidget">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -454,14 +486,14 @@
      <item row="3" column="1">
       <layout class="QVBoxLayout" name="verticalLayout_16" stretch="0,0,0,0">
        <item alignment="Qt::AlignHCenter">
-        <widget class="QLabel" name="touchPtLabel_2">
+        <widget class="QLabel" name="touchPtLabel">
          <property name="text">
           <string>Put in touch points on all 4 corners and drive arm to each touchpoint to record the location</string>
          </property>
         </widget>
        </item>
        <item alignment="Qt::AlignHCenter">
-        <widget class="QSlider" name="touchPtSlider_2">
+        <widget class="QSlider" name="touchPtSlider">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -498,7 +530,7 @@
         </widget>
        </item>
        <item alignment="Qt::AlignHCenter">
-        <widget class="QPushButton" name="recordButton_2">
+        <widget class="QPushButton" name="recordButton">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -511,7 +543,7 @@
         </widget>
        </item>
        <item alignment="Qt::AlignHCenter">
-        <widget class="QTableWidget" name="touchPtTabel_2">
+        <widget class="QTableWidget" name="touchPtTabel">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
            <horstretch>0</horstretch>
