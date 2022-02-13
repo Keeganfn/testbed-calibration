@@ -356,6 +356,26 @@
              <string>Select Camera</string>
             </property>
            </item>
+           <item>
+            <property name="text">
+             <string>A</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>B</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>C</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>D</string>
+            </property>
+           </item>
           </widget>
          </item>
          <item row="2" column="1">
@@ -502,7 +522,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QDoubleSpinBox" name="zDistBox">
+        <widget class="QDoubleSpinBox" name="zDistSpinBox">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
            <horstretch>0</horstretch>

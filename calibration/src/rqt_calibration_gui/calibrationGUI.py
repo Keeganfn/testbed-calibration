@@ -59,7 +59,7 @@ class CalibrationGUI(Plugin):
     #self._widget.xSpinBox.value()
     #self._widget.ySpinBox.value()
     #self._widget.zSpinBox.value()
-    
+
   
   def handle_import_clicked(self):
     print("importing internal camera calibration settings")
@@ -68,43 +68,47 @@ class CalibrationGUI(Plugin):
     print("taking picture")
 
   def handle_calibrate_camera_pose_clicked(self):
+    # Set label content
+    # self._widget.zDistFoundLabel.setText(self._widget.zDistFoundLabel.text() + "0")
     print("calibrating camera pose")
 
   def handle_testbed_change(self, i):
-      print("Testbed index is:", i, "Value:", self._widget.testBedComboBox.currentText())
+    print("Testbed index is:", i, "Value:", self._widget.testBedComboBox.currentText())
 
   def handle_arm_change(self, i):
-      print("Arm index is:", i, "Value:", self._widget.armComboBox.currentText())
+    print("Arm index is:", i, "Value:", self._widget.armComboBox.currentText())
 
   def handle_camera_T_change(self, i):
-      print("Camera index is:", i, "Value:", self._widget.cameraComboBoxT.currentText())
+    print("Camera index is:", i, "Value:", self._widget.cameraComboBoxT.currentText())
 
   def handle_camera_S_change(self, i):
-      print("Camera index is:", i, "Value:", self._widget.cameraComboBoxS.currentText())
+    print("Camera index is:", i, "Value:", self._widget.cameraComboBoxS.currentText())
 
   def handle_upper_left_touchpt_clicked(self):
-      print("getting upper left touchpt")
+    # Set label content
+    # self._widget.upperLeftLabel.setText(self._widget.upperLeftLabel.text() + " Done")
+    print("getting upper left touchpt")
 
   def handle_upper_right_touchpt_clicked(self):
-      print("getting upper right touchpt")
+    print("getting upper right touchpt")
 
   def handle_lower_left_touchpt_clicked(self):
-      print("getting lower left touchpt")
+    print("getting lower left touchpt")
 
   def handle_lower_right_touchpt_clicked(self):
-      print("getting lower right touchpt")
+    print("getting lower right touchpt")
   
   def handle_save_camera_settings_clicked(self):
-      print("saving camera settings")
+    print("saving camera settings")
   
   def handle_view_top_clicked(self):
-      print("viewing top camera")
+    print("viewing top camera")
   
   def handle_view_side_clicked(self):
-      print("viewing side camera")
+    print("viewing side camera")
   
   def handle_save_as_clicked(self):
-      print("saving settings")
+    print("saving settings")
   
   def handle_start_RViz_clicked(self):
-      print("starting RViz")
+    print("starting RViz")
