@@ -35,6 +35,22 @@ class ImportDialog(QDialog):
   def handle_cancel_clicked(self):
     print("Cancel clicked")
 
+class SaveDialog(QDialog):
+  def __init__(self):
+    super(SaveDialog, self).__init__()
+    self.setObjectName('SaveDialog')
+    ui_file = os.path.join(rospkg.RosPack().get_path('calibration'), 'resource', 'save.ui')
+    loadUi(ui_file, self)
+
+    self.buttonBox.accepted.connect(self.handle_save_clicked)
+    self.buttonBox.rejected.connect(self.handle_cancel_clicked)
+
+  def handle_save_clicked(self):
+    print("Save clicked")
+    print("Filename: " + self.filenameLineEdit.text())
+
+  def handle_cancel_clicked(self):
+    print("Cancel clicked")
 
 class CalibrationGUI(Plugin):
 
@@ -78,6 +94,9 @@ class CalibrationGUI(Plugin):
     self._widget.cameraComboBoxT.currentIndexChanged.connect(self.handle_camera_T_change)
     self._widget.cameraComboBoxS.currentIndexChanged.connect(self.handle_camera_S_change)
 
+    self.total_pictures = 0
+
+
     # Get zdist value manually 
     #self._widget.zDistSpinBox.value()
 
@@ -85,6 +104,7 @@ class CalibrationGUI(Plugin):
     #self._widget.xSpinBox.value()
     #self._widget.ySpinBox.value()
     #self._widget.zSpinBox.value()
+    
 
   
   def handle_import_clicked(self):
@@ -94,6 +114,12 @@ class CalibrationGUI(Plugin):
 
   def handle_take_picture_clicked(self):
     print("taking picture")
+    
+    #Update progress bar
+    if self.total_pictures < 30:
+      self.total_pictures+=1
+      self._widget.pictureProgressLabel.setText(str(self.total_pictures)+"/30")
+      self._widget.progressBar.setValue(self.total_pictures)
 
   def handle_calibrate_camera_pose_clicked(self):
     # Set label content
@@ -137,6 +163,8 @@ class CalibrationGUI(Plugin):
   
   def handle_save_as_clicked(self):
     print("saving settings")
+    save_dialog = SaveDialog()
+    save_dialog.exec_()
   
   def handle_start_RViz_clicked(self):
     print("starting RViz")
