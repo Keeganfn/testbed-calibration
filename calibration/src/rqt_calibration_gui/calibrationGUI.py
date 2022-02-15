@@ -94,7 +94,27 @@ class CalibrationGUI(Plugin):
     self._widget.cameraComboBoxT.currentIndexChanged.connect(self.handle_camera_T_change)
     self._widget.cameraComboBoxS.currentIndexChanged.connect(self.handle_camera_S_change)
 
+
     self.total_pictures = 0
+    self.z_dist = 0
+    self.testbed_model = None
+    self.arm_model = None
+    self.top_camera = None
+    self.side_camera = None
+
+    #self._widget.pictureButton.setEnabled(False)
+    #self._widget.cameraPoseButton.setEnabled(False)
+    #self._widget.zDistSpinBox.setEnabled(False)
+    #self._widget.saveCamSettingsButton.setEnabled(False)
+    #self._widget.xSpinBox.setEnabled(False)
+    #self._widget.ySpinBox.setEnabled(False)
+    #self._widget.zSpinBox.setEnabled(False)
+    #self._widget.upperLeftButton.setEnabled(False)
+    #self._widget.upperRightButton.setEnabled(False)
+    #self._widget.lowerLeftButton.setEnabled(False)
+    #self._widget.lowerRightButton.setEnabled(False)
+    #self._widget.saveAsButton.setEnabled(False)
+    #self._widget.startRVizButton.setEnabled(False)
 
 
     # Get zdist value manually 
@@ -121,9 +141,12 @@ class CalibrationGUI(Plugin):
       self._widget.pictureProgressLabel.setText(str(self.total_pictures)+"/30")
       self._widget.progressBar.setValue(self.total_pictures)
 
+      if self.total_pictures == 30:
+        self._widget.pictureButton.setEnabled(False)
+
   def handle_calibrate_camera_pose_clicked(self):
     # Set label content
-    # self._widget.zDistFoundLabel.setText(self._widget.zDistFoundLabel.text() + "0")
+    self._widget.zDistFoundLabel.setText("Z Distance Found: "+ str(self.z_dist))
     print("calibrating camera pose")
 
   def handle_testbed_change(self, i):
@@ -140,16 +163,19 @@ class CalibrationGUI(Plugin):
 
   def handle_upper_left_touchpt_clicked(self):
     # Set label content
-    # self._widget.upperLeftLabel.setText(self._widget.upperLeftLabel.text() + " Done")
+    self._widget.upperLeftLabel.setText("Status: Done")
     print("getting upper left touchpt")
 
   def handle_upper_right_touchpt_clicked(self):
+    self._widget.upperRightLabel.setText("Status: Done")
     print("getting upper right touchpt")
 
   def handle_lower_left_touchpt_clicked(self):
+    self._widget.lowerLeftLabel.setText("Status: Done")
     print("getting lower left touchpt")
 
   def handle_lower_right_touchpt_clicked(self):
+    self._widget.lowerRightLabel.setText("Status: Done")
     print("getting lower right touchpt")
   
   def handle_save_camera_settings_clicked(self):
