@@ -8,7 +8,33 @@ from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import pyqtSignal
 from python_qt_binding.QtGui import QBrush, QColor, QIcon
-from python_qt_binding.QtWidgets import QWidget, QAbstractItemView, QTableWidgetItem, QAbstractScrollArea, QMessageBox, QApplication
+from python_qt_binding.QtWidgets import QWidget, QAbstractItemView, QTableWidgetItem, QAbstractScrollArea, QMessageBox, QApplication, QDialog
+
+class ImportDialog(QDialog):
+  def __init__(self):
+    super(ImportDialog, self).__init__()
+    self.setObjectName('ImportDialog')
+    ui_file = os.path.join(rospkg.RosPack().get_path('calibration'), 'resource', 'import.ui')
+    loadUi(ui_file, self)
+
+    self.buttonBox.accepted.connect(self.handle_ok_clicked)
+    self.buttonBox.rejected.connect(self.handle_cancel_clicked)
+
+    self.importTBComboBox.currentIndexChanged.connect(self.handle_import_TB_change)
+    self.importCamComboBox.currentIndexChanged.connect(self.handle_import_cam_change)
+
+  def handle_import_TB_change(self, i):
+    print("Testbed import settings is:", i, "Value:", self.importTBComboBox.currentText())
+
+  def handle_import_cam_change(self, i):
+    print("Cam import settings is:", i, "Value:", self.importCamComboBox.currentText())
+  
+  def handle_ok_clicked(self):
+    print("Ok clicked")
+
+  def handle_cancel_clicked(self):
+    print("Cancel clicked")
+
 
 class CalibrationGUI(Plugin):
 
@@ -63,6 +89,8 @@ class CalibrationGUI(Plugin):
   
   def handle_import_clicked(self):
     print("importing internal camera calibration settings")
+    import_dialog = ImportDialog()
+    import_dialog.exec_()
 
   def handle_take_picture_clicked(self):
     print("taking picture")
