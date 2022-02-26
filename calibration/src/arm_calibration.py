@@ -1,13 +1,21 @@
-#! usr/bin/env python
+#!/usr/bin/env python
 
 import rospy
+import sys
 import numpy as np
+
+from calibration.srv import ArmCalibrationSRV, ArmCalibrationSRVResponse
+from calibration.srv import ArmRecordPointSRV, ArmRecordPointSRVResponse
+
 
 class ArmCalibration:
 
     def __init__(self):
-        #Add anything you need in init and create as many functions as you need
-        pass
+        #Service for record touchpoint
+        self.touchpoint_service = rospy.Service("record_touchpoint_srv", ArmRecordPointSRV, self.record_touchpoint_srv_callback)
+        #service for arm calibration
+        self.calibration_result_service = rospy.Service("arm_calibration_srv", ArmCalibrationSRV, self.arm_calibration_srv_callback)
+
 
     # *******************************************************************************************
     # @params: tp_data: dict object containing 4 Transformation matrices: One for each touchpoint.
@@ -38,28 +46,30 @@ class ArmCalibration:
 
         return trans_guess
 
+    def record_touchpoint_srv_callback(self, request):
+        #request contains the touchpoint location the arm is at
+        rospy.loginfo("LOCATION IS: {0}".format(request.location))
+        #call record touchpoint function, save result to data structure, update success and return
+        success = True
+        rospy.loginfo("RECORDED POINT")
+        return ArmRecordPointSRVResponse(success)
 
+    def arm_calibration_srv_callback(self, request):
+        rospy.loginfo("ARM ESTIMATED LOCATION: {0} {1} {2}".format(request.x, request.y, request.z))
+        #request contains the estimated location given by the user
+        initial_guess = [request.x, request.y, request.z]
         
-        
+        #DO CALCULATIONS HERE
 
+        #should return these variables, step represents the dimension of the matrix (2d not supported), ie step=3 is a 3x3
+        transform_matrix_step = 3
+        transform_matrix = [1,2,3,1,2,3,1,2,3]
+        return ArmCalibrationSRVResponse(transform_matrix_step, transform_matrix)
 
-
-
-    '''
-    def joint_angle_subscriber(self, angles):
-        #This is where we will subscribe to the arm joint angles in the future
-        pass
-
-    def record_touchpoint_server(self, msg):
-        #This is where the client in the GUI will tell us to record our joint angles and point (4 in total)
-        pass
-
-    def arm_transormation_martix_server(self, msg):
-        #This is where the client in the GUI will query when it wants the transformation matrix from arm to table
-        pass
-
-    '''
+    
 
 if __name__ == "__main__":
-
-    ArmCalibration().calibrate_arm(1)
+    #initializes node and keeps spinning until roscore is shutdown
+    rospy.init_node("arm_calibration", argv=sys.argv)
+    calibrate = ArmCalibration()
+    rospy.spin()

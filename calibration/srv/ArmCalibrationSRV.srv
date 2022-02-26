@@ -1,0 +1,8 @@
+#input
+int64 x
+int64 y
+int64 z
+---
+#output
+int64 transform_matrix_step
+float64[] transform_matrix

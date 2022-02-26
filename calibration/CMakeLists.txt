@@ -61,6 +61,8 @@ catkin_python_setup()
 add_service_files(
    FILES
    CameraCalibrationSRV.srv
+   ArmCalibrationSRV.srv
+   ArmRecordPointSRV.srv
 )
 
 ## Generate actions in the 'action' folder
