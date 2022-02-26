@@ -1,0 +1,22 @@
+<launch>
+   <!-- launch video stream -->
+   <include file="$(find video_stream_opencv)/launch/camera.launch" >
+        <!-- node name and ros graph name -->
+        <arg name="camera_name" value="camera_1" />
+        <!-- means video device 0, /dev/video0 -->
+        <arg name="video_stream_provider" value="0" />
+   </include>
+
+    <node pkg="calibration"
+        name="arm_calibration"
+        type="arm_calibration.py"
+        output="screen">
+    </node>
+
+    <node pkg="calibration"
+        name="camera_calibration"
+        type="camera_calibration.py"
+        output="screen">
+    </node>
+
+</launch>
