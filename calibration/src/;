@@ -4,9 +4,10 @@ import rospy
 import sys
 
 import cv2
-from cv_bridge import CvBridge, CvBridgeError
 
 from sensor_msgs.msg import Image
+
+from cv_bridge import CvBridge, CvBridgeError
 from std_srvs.srv import Trigger
 from calibration.srv import CameraCalibrationSRV, CameraCalibrationSRVResponse
 
@@ -24,12 +25,11 @@ class CameraCalibration:
 
         #Subscribes to camera feed
         self.camera_sub_1 = rospy.Subscriber("camera_1/image_raw", Image, self.camera_1_callback, queue_size=1)
-        #Service for take picture 
+        #Service for take picture service
         self.picture_service = rospy.Service("take_picture_srv", Trigger, self.take_picture_srv_callback)
-        #service for camera calibration
+        #service for camera calibration service
         self.calibration_result_service = rospy.Service("camera_calibration_srv", CameraCalibrationSRV, self.camera_calibration_srv_callback)
 
-    #corresponds to camera1, multiple camera support will come later
     def camera_1_callback(self, msg):
         #msg is an Image message which you can save to a data structure
         if self.take_picture_1:
@@ -58,7 +58,6 @@ class CameraCalibration:
         return CameraCalibrationSRVResponse(distortion, camera_matrix_step, camera_matrix, transform_matrix_step, transform_matrix)
 
 if __name__ == "__main__":
-    #initializes node and keeps spinning until roscore is shutdown
     rospy.init_node("camera_calibration", argv=sys.argv)
     calibrate = CameraCalibration()
     rospy.spin()
