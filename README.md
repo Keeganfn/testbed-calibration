@@ -7,10 +7,11 @@ Also install catkin build (use catkin build instead of catkin_make): https://cat
 
 <h2>Basic ROS Usage</h2>
 
-1. Open 2 terminals
-2. Type <code>roscore</code> in one terminal to start the main ROS node
-3. Then to run a different node, type <code>rosrun calibration &lt;filename></code> in the other terminal, 
-    where <code>&lt;filename></code> is the script to run in <code>/calibration/src/</code>
+### NEED TO START LIKE THIS NOW ON MAIN BRANCH
+1. Open 2 terminals and plug in webcam.
+2. Enter ```roslaunch calibration testbed_calibration.launch```
+3. In second terminal either use ```rqt --standalone calibration``` or ```rqt``` if you want to see the camera feed. 
+
 
 If anything breaks, run:<br>
 <code>catkin clear</code><br>

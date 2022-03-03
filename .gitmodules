@@ -1,0 +1,3 @@
+[submodule "video_stream_opencv"]
+	path = video_stream_opencv
+	url = https://github.com/ros-drivers/video_stream_opencv.git
