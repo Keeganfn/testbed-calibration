@@ -68,6 +68,7 @@ class ArmCalibration:
         y = 0
         z = 0
         
+        #print(hello)
         arr_len = len(arr_translations)
 
         for i in range(arr_len):
