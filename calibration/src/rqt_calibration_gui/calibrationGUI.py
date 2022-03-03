@@ -16,49 +16,6 @@ from calibration.srv import ArmCalibrationSRV, ArmCalibrationSRVResponse, ArmCal
 from calibration.srv import ArmRecordPointSRV, ArmRecordPointSRVResponse, ArmRecordPointSRVRequest
 
 
-
-class ImportDialog(QDialog):
-    def __init__(self):
-        super(ImportDialog, self).__init__()
-        self.setObjectName('ImportDialog')
-        ui_file = os.path.join(rospkg.RosPack().get_path('calibration'), 'resource', 'import.ui')
-        loadUi(ui_file, self)
-
-        self.buttonBox.accepted.connect(self.handle_ok_clicked)
-        self.buttonBox.rejected.connect(self.handle_cancel_clicked)
-
-        self.importTBComboBox.currentIndexChanged.connect(self.handle_import_TB_change)
-        self.importCamComboBox.currentIndexChanged.connect(self.handle_import_cam_change)
-
-    def handle_import_TB_change(self, i):
-        print("Testbed import settings is:", i, "Value:", self.importTBComboBox.currentText())
-
-    def handle_import_cam_change(self, i):
-        print("Cam import settings is:", i, "Value:", self.importCamComboBox.currentText())
-    
-    def handle_ok_clicked(self):
-        print("Ok clicked")
-
-    def handle_cancel_clicked(self):
-        print("Cancel clicked")
-
-class SaveDialog(QDialog):
-    def __init__(self):
-        super(SaveDialog, self).__init__()
-        self.setObjectName('SaveDialog')
-        ui_file = os.path.join(rospkg.RosPack().get_path('calibration'), 'resource', 'save.ui')
-        loadUi(ui_file, self)
-
-        self.buttonBox.accepted.connect(self.handle_save_clicked)
-        self.buttonBox.rejected.connect(self.handle_cancel_clicked)
-
-    def handle_save_clicked(self):
-        print("Save clicked")
-        print("Filename: " + self.filenameLineEdit.text())
-
-    def handle_cancel_clicked(self):
-        print("Cancel clicked")
-
 class CalibrationGUI(Plugin):
 
     def __init__(self, context):
@@ -95,46 +52,49 @@ class CalibrationGUI(Plugin):
 
 
         # Setup button event listeners
-        self._widget.importButton.clicked[bool].connect(self.handle_import_clicked)
+        self._widget.importCalibButton.clicked[bool].connect(self.handle_import_calib_clicked)
+        self._widget.importCamButton.clicked[bool].connect(self.handle_import_cam_clicked)
         self._widget.pictureButton.clicked[bool].connect(self.handle_take_picture_clicked)
         self._widget.cameraPoseButton.clicked[bool].connect(self.handle_calibrate_camera_pose_clicked)
+        self._widget.markCompleteButton.clicked[bool].connect(self.handle_mark_complete_clicked)
         self._widget.upperLeftButton.clicked[bool].connect(self.handle_upper_left_touchpt_clicked)
         self._widget.upperRightButton.clicked[bool].connect(self.handle_upper_right_touchpt_clicked)
         self._widget.lowerLeftButton.clicked[bool].connect(self.handle_lower_left_touchpt_clicked)
         self._widget.lowerRightButton.clicked[bool].connect(self.handle_lower_right_touchpt_clicked)
-        self._widget.saveCamSettingsButton.clicked[bool].connect(self.handle_save_camera_settings_clicked)
-        self._widget.viewTButton.clicked[bool].connect(self.handle_view_top_clicked)
-        self._widget.viewSButton.clicked[bool].connect(self.handle_view_side_clicked)
+        self._widget.saveCalibButton.clicked[bool].connect(self.handle_save_camera_calib_clicked)
         self._widget.saveAsButton.clicked[bool].connect(self.handle_save_as_clicked)
         self._widget.startRVizButton.clicked[bool].connect(self.handle_start_RViz_clicked)
 
         # Setup combo box event listeners
         self._widget.testBedComboBox.currentIndexChanged.connect(self.handle_testbed_change)
         self._widget.armComboBox.currentIndexChanged.connect(self.handle_arm_change)
-        self._widget.cameraComboBoxT.currentIndexChanged.connect(self.handle_camera_T_change)
-        self._widget.cameraComboBoxS.currentIndexChanged.connect(self.handle_camera_S_change)
 
 
         self.total_pictures = 0
         self.z_dist = 0
-        self.testbed_model = None
-        self.arm_model = None
-        self.top_camera = None
-        self.side_camera = None
 
-        #self._widget.pictureButton.setEnabled(False)
-        #self._widget.cameraPoseButton.setEnabled(False)
-        #self._widget.zDistSpinBox.setEnabled(False)
-        #self._widget.saveCamSettingsButton.setEnabled(False)
-        #self._widget.xSpinBox.setEnabled(False)
-        #self._widget.ySpinBox.setEnabled(False)
-        #self._widget.zSpinBox.setEnabled(False)
-        #self._widget.upperLeftButton.setEnabled(False)
-        #self._widget.upperRightButton.setEnabled(False)
-        #self._widget.lowerLeftButton.setEnabled(False)
-        #self._widget.lowerRightButton.setEnabled(False)
-        #self._widget.saveAsButton.setEnabled(False)
-        #self._widget.startRVizButton.setEnabled(False)
+        # Determining when to enable things
+        self.is_testbed_selected = False
+        self.is_arm_selected = False
+        self.is_camera_selected = False
+        self.is_touchpt_recording_done = False
+        self.is_internal_camera_calibrated = False
+
+        # Grey out everything
+        self._widget.pictureButton.setEnabled(False)
+        self._widget.cameraPoseButton.setEnabled(False)
+        self._widget.zDistSpinBox.setEnabled(False)
+        self._widget.xSpinBox.setEnabled(False)
+        self._widget.ySpinBox.setEnabled(False)
+        self._widget.zSpinBox.setEnabled(False)
+        self._widget.markCompleteButton.setEnabled(False)
+        self._widget.upperLeftButton.setEnabled(False)
+        self._widget.upperRightButton.setEnabled(False)
+        self._widget.lowerLeftButton.setEnabled(False)
+        self._widget.lowerRightButton.setEnabled(False)
+        self._widget.saveCalibButton.setEnabled(False)
+        self._widget.saveAsButton.setEnabled(False)
+        self._widget.startRVizButton.setEnabled(False)
 
 
         # Get zdist value manually 
@@ -146,11 +106,28 @@ class CalibrationGUI(Plugin):
         #self._widget.zSpinBox.value()
         
 
+    def update_enabled(self):
+        self._widget.pictureButton.setEnabled(self.is_camera_selected)
+        self._widget.cameraPoseButton.setEnabled(self.is_internal_camera_calibrated)
+        self._widget.zDistSpinBox.setEnabled(False)
+        self._widget.xSpinBox.setEnabled(False)
+        self._widget.ySpinBox.setEnabled(False)
+        self._widget.zSpinBox.setEnabled(False)
+        self._widget.markCompleteButton.setEnabled(False)
+        self._widget.upperLeftButton.setEnabled(False)
+        self._widget.upperRightButton.setEnabled(False)
+        self._widget.lowerLeftButton.setEnabled(False)
+        self._widget.lowerRightButton.setEnabled(False)
+        self._widget.saveCalibButton.setEnabled(False)
+        self._widget.saveAsButton.setEnabled(False)
+        self._widget.startRVizButton.setEnabled(False)
+
     
-    def handle_import_clicked(self):
-        print("importing internal camera calibration settings")
-        import_dialog = ImportDialog()
-        import_dialog.exec_()
+    def handle_import_calib_clicked(self):
+        print("importing calibration settings")
+
+    def handle_import_cam_clicked(self):
+        print("importing camera settings")
 
     def handle_take_picture_clicked(self):
         print("taking picture")
@@ -183,16 +160,18 @@ class CalibrationGUI(Plugin):
         rospy.loginfo("TOUCHPOINT RECORD: {0}".format(response.success))
 
     def handle_testbed_change(self, i):
+        if i != 0:
+            self.is_testbed_selected = True
+        else:
+            self.is_testbed_selected = False
         print("Testbed index is:", i, "Value:", self._widget.testBedComboBox.currentText())
 
     def handle_arm_change(self, i):
+        if i != 0:
+            self.is_arm_selected = True
+        else:
+            self.is_arm_selected = False
         print("Arm index is:", i, "Value:", self._widget.armComboBox.currentText())
-
-    def handle_camera_T_change(self, i):
-        print("Camera index is:", i, "Value:", self._widget.cameraComboBoxT.currentText())
-
-    def handle_camera_S_change(self, i):
-        print("Camera index is:", i, "Value:", self._widget.cameraComboBoxS.currentText())
 
     def handle_upper_left_touchpt_clicked(self):
         # Set label content
@@ -215,8 +194,11 @@ class CalibrationGUI(Plugin):
         self._widget.lowerRightLabel.setText("Status: Done")
         print("getting lower right touchpt")
     
-    def handle_save_camera_settings_clicked(self):
-        print("saving camera settings")
+    def handle_mark_complete_clicked(self):
+        print("marking complete")
+    
+    def handle_save_camera_calib_clicked(self):
+        print("saving camera calib settings")
     
     def handle_view_top_clicked(self):
         print("viewing top camera")
@@ -229,8 +211,6 @@ class CalibrationGUI(Plugin):
         response = ArmCalibrationSRV()
         response = self.arm_calibration_client(1,2,3)
         rospy.loginfo("FOUND: {0}".format(response.transform_matrix))
-        save_dialog = SaveDialog()
-        save_dialog.exec_()
     
     def handle_start_RViz_clicked(self):
         print("starting RViz")
