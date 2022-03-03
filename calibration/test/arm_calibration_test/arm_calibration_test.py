@@ -22,7 +22,7 @@ def test_calibrate_arm():
     mock_data = get_mock_trans_matrx()
     result = calib.calibrate_arm(mock_data)
 
-    #print(result)
+    print(result)
 
 
 if __name__ == '__main__':
