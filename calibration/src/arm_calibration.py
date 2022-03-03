@@ -16,6 +16,8 @@ class ArmCalibration:
         #service for arm calibration
         self.calibration_result_service = rospy.Service("arm_calibration_srv", ArmCalibrationSRV, self.arm_calibration_srv_callback)
 
+        self.tp_data = dict()
+
 
     # *******************************************************************************************
     # @params: tp_data: dict object containing 4 Transformation matrices: One for each touchpoint.
@@ -34,20 +36,25 @@ class ArmCalibration:
     # @returns: a calibrated Transofmration matrix of the Robot arm's base in the world coordinate
     # frame.
     # *******************************************************************************************
-    def calibrate_arm(self, tp_data):
+    def calibrate_arm(self, tp_data, initial_guess):
         
+        x = initial_guess[0] or -.597
+        y = initial_guess[1] or 0
+        z = initial_guess[2] or .035
+
         # Estimated Transformation Matrix: Origin -> Robot arm Base
         estOriginToBase = np.array([
-        [1, 0, 0, -.597],
-        [0, 1, 0, 0],
-        [0, 0, 1, .035],
+        [1, 0, 0, x],
+        [0, 1, 0, y],
+        [0, 0, 1, z],
         [0, 0, 0, 1]])
 
         arr_translations = self.__getTranslations(estOriginToBase, tp_data)
         
         newMatrix = self.__updateTransMatrix(arr_translations, estOriginToBase)
         
-        return newMatrix
+        # returns the transform matrix flattened to 1D array
+        return np.array.flatten(newMatrix)
 
     # Returns a 1x4 vector containing the XYZ coordinates of the end effector in the world frame.
     def __getEndEffInWorld(self, originToBase, endEffToBase):
@@ -132,14 +139,37 @@ class ArmCalibration:
 
         #print(dx, dy, dz)
 
+    # Records the end effector location in the world frame. Stores transformation matrix in tp_data.
+    def __recordTouchpoint(self, id):
+
+        listener = tf.TransformListener()
+
+        while True:
+            try:
+                translation, rotation = listener.lookupTransform('j2s7s300_link_base', 'j2s7s300_end_effector', rospy.Time())
+                transform_mat = listener.fromTranslationRotation(translation, rotation)
+
+                self.tp_data[id] = transform_mat
+                return True
+
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                
+                return False
+
+    
+
+
 
     def record_touchpoint_srv_callback(self, request):
         #request contains the touchpoint location the arm is at
         rospy.loginfo("LOCATION IS: {0}".format(request.location))
+
         #call record touchpoint function, save result to data structure, update success and return
-        success = True
+        success = self.__recordTouchpoint(request.location)
         rospy.loginfo("RECORDED POINT")
+
         return ArmRecordPointSRVResponse(success)
+
 
     def arm_calibration_srv_callback(self, request):
         rospy.loginfo("ARM ESTIMATED LOCATION: {0} {1} {2}".format(request.x, request.y, request.z))
@@ -147,10 +177,11 @@ class ArmCalibration:
         initial_guess = [request.x, request.y, request.z]
         
         #DO CALCULATIONS HERE
+        transform_matrix = self.calibrate_arm(self.tp_data, initial_guess)
 
         #should return these variables, step represents the dimension of the matrix (2d not supported), ie step=3 is a 3x3
-        transform_matrix_step = 3
-        transform_matrix = [1,2,3,1,2,3,1,2,3]
+        transform_matrix_step = 4
+
         return ArmCalibrationSRVResponse(transform_matrix_step, transform_matrix)
 
 
