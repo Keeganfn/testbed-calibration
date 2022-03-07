@@ -11,7 +11,7 @@ from python_qt_binding.QtGui import QBrush, QColor, QIcon
 from python_qt_binding.QtWidgets import QWidget, QAbstractItemView, QTableWidgetItem, QAbstractScrollArea, QMessageBox, QApplication, QDialog
 
 from std_srvs.srv import Trigger, TriggerResponse
-from calibration.srv import CameraCalibrationSRV, CameraCalibrationSRVRequest #CameraCalibrationResponse
+from calibration.srv import CameraCalibrationSRV, CameraCalibrationResponse, CameraCalibrationSRVRequest 
 from calibration.srv import ArmCalibrationSRV, ArmCalibrationSRVResponse, ArmCalibrationSRVRequest
 from calibration.srv import ArmRecordPointSRV, ArmRecordPointSRVResponse, ArmRecordPointSRVRequest
 
@@ -110,6 +110,7 @@ class CalibrationGUI(Plugin):
         #self._widget.ySpinBox.value()
         #self._widget.zSpinBox.value()
         
+        # Testing adding in row to camera table
         self.insert_camera_to_table(["Camera 1", "No"])
         
     def insert_camera_to_table(self, row_list):
@@ -186,11 +187,11 @@ class CalibrationGUI(Plugin):
 
     def handle_calibrate_camera_pose_clicked(self):
         # Set label content
-        self._widget.zDistFoundLabel.setText("Z Distance Found: "+ str(self.z_dist))
         print("calibrating camera pose")
-        #response = CameraCalibrationResponse()
-        #response = self.camera_calibration_client(self.z_dist)
-        #rospy.loginfo("FOUND {0} {1} {2}".format(response.distortion, response.camera_matrix, response.transform_matrix))
+        response = CameraCalibrationResponse()
+        response = self.camera_calibration_client(self.z_dist)
+        rospy.loginfo("FOUND {0} {1} {2}".format(response.distortion, response.camera_matrix, response.transform_matrix))
+        self._widget.zDistFoundLabel.setText("Z Distance Found: "+ str(self.z_dist))
 
         self.is_camera_pose_calibrated = True
         self.update_enabled()
