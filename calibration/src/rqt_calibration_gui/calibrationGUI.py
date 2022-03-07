@@ -11,7 +11,7 @@ from python_qt_binding.QtGui import QBrush, QColor, QIcon
 from python_qt_binding.QtWidgets import QWidget, QAbstractItemView, QTableWidgetItem, QAbstractScrollArea, QMessageBox, QApplication, QDialog
 
 from std_srvs.srv import Trigger, TriggerResponse
-from calibration.srv import CameraCalibrationSRV, CameraCalibrationResponse, CameraCalibrationSRVRequest 
+from calibration.srv import CameraCalibrationSRV, CameraCalibrationSRVRequest, CameraCalibrationResponse
 from calibration.srv import ArmCalibrationSRV, ArmCalibrationSRVResponse, ArmCalibrationSRVRequest
 from calibration.srv import ArmRecordPointSRV, ArmRecordPointSRVResponse, ArmRecordPointSRVRequest
 
@@ -82,6 +82,8 @@ class CalibrationGUI(Plugin):
         self.is_touchpt_recording_done = [False, False, False, False]
         self.is_internal_camera_calibrated = False
         self.is_camera_pose_calibrated = False
+        self.is_camera_calibration_imported = False
+        self.is_mark_complete = False
 
         # Grey out everything
         self._widget.pictureButton.setEnabled(False)
@@ -127,11 +129,11 @@ class CalibrationGUI(Plugin):
         self._widget.camTable.setEnabled(self.is_testbed_selected and self.is_arm_selected)
         self._widget.importCamButton.setEnabled(self.is_testbed_selected and self.is_arm_selected)
 
-        self._widget.pictureButton.setEnabled(self.is_camera_selected and (not self.is_internal_camera_calibrated))
-        self._widget.cameraPoseButton.setEnabled(self.is_internal_camera_calibrated)
-        self._widget.zDistSpinBox.setEnabled(self.is_internal_camera_calibrated)
-        self._widget.markCompleteButton.setEnabled(self.is_internal_camera_calibrated)
-        self._widget.saveCalibButton.setEnabled(self.is_internal_camera_calibrated)
+        self._widget.pictureButton.setEnabled(self.is_camera_selected and (not self.is_camera_calibration_imported) and (not self.is_internal_camera_calibrated))
+        self._widget.cameraPoseButton.setEnabled(self.is_internal_camera_calibrated and (not self.is_camera_calibration_imported) and (not self.is_mark_complete))
+        self._widget.zDistSpinBox.setEnabled(self.is_internal_camera_calibrated and (not self.is_camera_calibration_imported) and (not self.is_mark_complete))
+        self._widget.markCompleteButton.setEnabled(self.is_internal_camera_calibrated and (not self.is_camera_calibration_imported) and (not self.is_mark_complete))
+        self._widget.saveCalibButton.setEnabled(self.is_internal_camera_calibrated and (not self.is_camera_calibration_imported) and (not self.is_mark_complete))
 
         self._widget.xSpinBox.setEnabled(self.is_camera_pose_calibrated)
         self._widget.ySpinBox.setEnabled(self.is_camera_pose_calibrated)
@@ -151,7 +153,9 @@ class CalibrationGUI(Plugin):
 
     def handle_import_cam_clicked(self):
         print("importing camera settings")
+        self.is_camera_calibration_imported = True
         self.is_internal_camera_calibrated = True
+        self.is_camera_pose_calibrated = True
         self.update_enabled()
 
     def handle_cam_table_item_clicked(self, item):
@@ -250,6 +254,7 @@ class CalibrationGUI(Plugin):
     
     def handle_mark_complete_clicked(self):
         print("marking complete")
+        self.is_mark_complete = True
         self.update_enabled()
     
     def handle_save_camera_calib_clicked(self):
