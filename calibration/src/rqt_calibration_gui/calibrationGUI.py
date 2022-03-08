@@ -11,10 +11,11 @@ from python_qt_binding.QtGui import QBrush, QColor, QIcon
 from python_qt_binding.QtWidgets import QWidget, QAbstractItemView, QTableWidgetItem, QAbstractScrollArea, QMessageBox, QApplication, QDialog, QFileDialog
 
 from std_srvs.srv import Trigger, TriggerResponse
-from calibration.srv import CameraCalibrationSRV, CameraCalibrationSRVRequest, CameraCalibrationResponse
+from calibration.srv import CameraCalibrationSRV, CameraCalibrationSRVResponse, CameraCalibrationSRVRequest
 from calibration.srv import ArmCalibrationSRV, ArmCalibrationSRVResponse, ArmCalibrationSRVRequest
 from calibration.srv import ArmRecordPointSRV, ArmRecordPointSRVResponse, ArmRecordPointSRVRequest
 
+import csv
 
 class CalibrationGUI(Plugin):
 
@@ -205,7 +206,7 @@ class CalibrationGUI(Plugin):
     def handle_calibrate_camera_pose_clicked(self):
         # Set label content
         print("calibrating camera pose")
-        response = CameraCalibrationResponse()
+        response = CameraCalibrationSRVResponse()
         response = self.camera_calibration_client(self.z_dist)
         rospy.loginfo("FOUND {0} {1} {2}".format(response.distortion, response.camera_matrix, response.transform_matrix))
         self._widget.zDistFoundLabel.setText("Z Distance Found: "+ str(self.z_dist))
