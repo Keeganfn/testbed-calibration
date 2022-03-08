@@ -48,8 +48,15 @@ class CalibrationGUI(Plugin):
         rospy.wait_for_service("record_touchpoint_srv")
         self.record_touchpoint_client = rospy.ServiceProxy("record_touchpoint_srv", ArmRecordPointSRV)
 
-
-
+        self.testbed_selected = None
+        self.arm_selected = None
+        self.camera_selected = None
+        self.total_pictures = 0
+        self.z_dist = 0
+        self.camera_distortion = None
+        self.camera_matrix = None
+        self.camera_transform_matrix = None
+        self.arm_transform_matrix = None
 
 
         # Setup button event listeners
@@ -73,8 +80,6 @@ class CalibrationGUI(Plugin):
         # Table
         self._widget.camTable.itemClicked.connect(self.handle_cam_table_item_clicked)
         
-        self.total_pictures = 0
-        self.z_dist = 0
 
         # Determining when to enable things
         self.is_testbed_selected = False
@@ -116,7 +121,25 @@ class CalibrationGUI(Plugin):
         
         # Testing adding in row to camera table
         self.insert_camera_to_table(["Camera 1", "No"])
-        
+
+    def read_calibration_csv(self, filename):
+        with open(filename, "r") as f:
+            csv_reader = csv.reader(f, delimiter = ",", lineterminator="\n")
+            for row in csv_reader:
+                print(row)
+
+    def save_calibration_to_csv(self, filename):
+        with open(filename,"w") as f:
+            csv_writer = csv.writer(f,delimiter=",",lineterminator="\n")
+            csv_writer.writerow(["camera_distortion","camera_matrix","camera_transform_matrix", "arm_transform_matrix"])
+            csv_writer.writerow([self.camera_distortion,self.camera_matrix,self.camera_transform_matrix, self.arm_transform_matrix])
+
+    def save_camera_calibration_to_csv(self, filename):
+        with open(filename,"w") as f:
+            csv_writer = csv.writer(f,delimiter=",",lineterminator="\n")
+            csv_writer.writerow(["camera_distortion","camera_matrix","camera_transform_matrix"])
+            csv_writer.writerow([self.camera_distortion,self.camera_matrix,self.camera_transform_matrix])
+
     def insert_camera_to_table(self, row_list):
             row_count = self._widget.camTable.rowCount()
             self._widget.camTable.setRowCount(row_count+1)
@@ -157,8 +180,12 @@ class CalibrationGUI(Plugin):
     def handle_import_calib_clicked(self):
         print("importing calibration settings")
         # Get calibration file
-        #file_name = QFileDialog.getOpenFileName(self._widget, "Import Calibration", "/home", "Text files (*.txt)")
-        self.is_import_calib_clicked = True
+        filename, selecter_filter = QFileDialog.getOpenFileName(self._widget, "Import Calibration", "/home", "CSV files (*.csv)")
+
+        if filename != None and filename != "":
+            self.read_calibration_csv(filename)
+            self.is_import_calib_clicked = True
+
         self.update_enabled()
 
     def handle_import_cam_clicked(self):
@@ -209,6 +236,11 @@ class CalibrationGUI(Plugin):
         response = CameraCalibrationSRVResponse()
         response = self.camera_calibration_client(self.z_dist)
         rospy.loginfo("FOUND {0} {1} {2}".format(response.distortion, response.camera_matrix, response.transform_matrix))
+
+        self.camera_distortion = response.distortion
+        self.camera_matrix = response.camera_matrix
+        self.camera_transform_matrix = response.transform_matrix
+
         self._widget.zDistFoundLabel.setText("Z Distance Found: "+ str(self.z_dist))
 
         self.is_camera_pose_calibrated = True
@@ -281,7 +313,13 @@ class CalibrationGUI(Plugin):
         response = ArmCalibrationSRV()
         response = self.arm_calibration_client(1,2,3)
         rospy.loginfo("FOUND: {0}".format(response.transform_matrix))
-        file_name = QFileDialog.getSaveFileName(self._widget, "Save Calibration", "/home", "Text files (*.txt)")
+
+        self.arm_transform_matrix = response.transform_matrix
+
+        filename, selected_filter = QFileDialog.getSaveFileName(self._widget, "Save Calibration", "/home", "CSV files (*.csv)")
+
+        if filename != None and filename != "":
+            self.save_calibration_to_csv(filename)
     
     def handle_start_RViz_clicked(self):
         print("starting RViz")
