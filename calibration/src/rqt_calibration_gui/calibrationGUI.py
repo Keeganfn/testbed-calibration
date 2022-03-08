@@ -131,19 +131,21 @@ class CalibrationGUI(Plugin):
         self._widget.importCamButton.setEnabled(self.is_testbed_selected and self.is_arm_selected)
 
         self._widget.pictureButton.setEnabled(self.is_camera_selected and (not self.is_camera_calibration_imported) and (not self.is_internal_camera_calibrated) and (not self.is_import_calib_clicked))
-        self._widget.cameraPoseButton.setEnabled(self.is_internal_camera_calibrated and (not self.is_camera_calibration_imported) and (not self.is_mark_complete) and (not self.is_import_calib_clicked))
-        self._widget.zDistSpinBox.setEnabled(self.is_internal_camera_calibrated and (not self.is_camera_calibration_imported) and (not self.is_mark_complete) and (not self.is_import_calib_clicked))
-        self._widget.markCompleteButton.setEnabled(self.is_internal_camera_calibrated and (not self.is_camera_calibration_imported) and (not self.is_mark_complete) and (not self.is_import_calib_clicked))
-        self._widget.saveCalibButton.setEnabled(self.is_internal_camera_calibrated and (not self.is_camera_calibration_imported) and (not self.is_mark_complete) and (not self.is_import_calib_clicked))
 
-        self._widget.xSpinBox.setEnabled(self.is_camera_pose_calibrated and (not self.is_import_calib_clicked))
-        self._widget.ySpinBox.setEnabled(self.is_camera_pose_calibrated and (not self.is_import_calib_clicked))
-        self._widget.zSpinBox.setEnabled(self.is_camera_pose_calibrated and (not self.is_import_calib_clicked))
+        camera_pose_enabled = self.is_internal_camera_calibrated and (not self.is_camera_calibration_imported) and (not self.is_mark_complete) and (not self.is_import_calib_clicked)
+        self._widget.cameraPoseButton.setEnabled(camera_pose_enabled)
+        self._widget.zDistSpinBox.setEnabled(camera_pose_enabled)
+        self._widget.markCompleteButton.setEnabled(camera_pose_enabled and self.is_camera_pose_calibrated)
+        self._widget.saveCalibButton.setEnabled(camera_pose_enabled)
 
-        self._widget.upperLeftButton.setEnabled(self.is_camera_pose_calibrated and (not self.is_import_calib_clicked))
-        self._widget.upperRightButton.setEnabled(self.is_camera_pose_calibrated and (not self.is_import_calib_clicked))
-        self._widget.lowerLeftButton.setEnabled(self.is_camera_pose_calibrated and (not self.is_import_calib_clicked))
-        self._widget.lowerRightButton.setEnabled(self.is_camera_pose_calibrated and (not self.is_import_calib_clicked))
+        touchpt_section_enabled = self.is_camera_pose_calibrated and self.is_mark_complete and (not self.is_import_calib_clicked)
+        self._widget.xSpinBox.setEnabled(touchpt_section_enabled)
+        self._widget.ySpinBox.setEnabled(touchpt_section_enabled)
+        self._widget.zSpinBox.setEnabled(touchpt_section_enabled)
+        self._widget.upperLeftButton.setEnabled(touchpt_section_enabled)
+        self._widget.upperRightButton.setEnabled(touchpt_section_enabled)
+        self._widget.lowerLeftButton.setEnabled(touchpt_section_enabled)
+        self._widget.lowerRightButton.setEnabled(touchpt_section_enabled)
 
         self._widget.saveAsButton.setEnabled(all(self.is_touchpt_recording_done))
         self._widget.startRVizButton.setEnabled(all(self.is_touchpt_recording_done) or self.is_import_calib_clicked)
@@ -166,6 +168,7 @@ class CalibrationGUI(Plugin):
         self.is_camera_calibration_imported = True
         self.is_internal_camera_calibrated = True
         self.is_camera_pose_calibrated = True
+        self.is_mark_complete = True
         self.update_enabled()
 
     def handle_cam_table_item_clicked(self, item):
@@ -269,6 +272,7 @@ class CalibrationGUI(Plugin):
     
     def handle_save_camera_calib_clicked(self):
         print("saving camera calib settings")
+        file_name = QFileDialog.getSaveFileName(self._widget, "Save Camera Calibration", "/home", "Text files (*.txt)")
         self.update_enabled()
     
     def handle_save_as_clicked(self):
@@ -276,6 +280,7 @@ class CalibrationGUI(Plugin):
         response = ArmCalibrationSRV()
         response = self.arm_calibration_client(1,2,3)
         rospy.loginfo("FOUND: {0}".format(response.transform_matrix))
+        file_name = QFileDialog.getSaveFileName(self._widget, "Save Calibration", "/home", "Text files (*.txt)")
     
     def handle_start_RViz_clicked(self):
         print("starting RViz")
