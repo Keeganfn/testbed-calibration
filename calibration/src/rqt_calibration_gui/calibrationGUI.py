@@ -8,7 +8,7 @@ from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import pyqtSignal
 from python_qt_binding.QtGui import QBrush, QColor, QIcon
-from python_qt_binding.QtWidgets import QWidget, QAbstractItemView, QTableWidgetItem, QAbstractScrollArea, QMessageBox, QApplication, QDialog
+from python_qt_binding.QtWidgets import QWidget, QAbstractItemView, QTableWidgetItem, QAbstractScrollArea, QMessageBox, QApplication, QDialog, QFileDialog
 
 from std_srvs.srv import Trigger, TriggerResponse
 from calibration.srv import CameraCalibrationSRV, CameraCalibrationSRVRequest, CameraCalibrationResponse
@@ -84,6 +84,7 @@ class CalibrationGUI(Plugin):
         self.is_camera_pose_calibrated = False
         self.is_camera_calibration_imported = False
         self.is_mark_complete = False
+        self.is_import_calib_clicked = False
 
         # Grey out everything
         self._widget.pictureButton.setEnabled(False)
@@ -126,33 +127,42 @@ class CalibrationGUI(Plugin):
                 curr_col += 1
 
     def update_enabled(self):
-        self._widget.camTable.setEnabled(self.is_testbed_selected and self.is_arm_selected)
+        self._widget.camTable.setEnabled(self.is_testbed_selected and self.is_arm_selected and (not self.is_import_calib_clicked))
         self._widget.importCamButton.setEnabled(self.is_testbed_selected and self.is_arm_selected)
 
-        self._widget.pictureButton.setEnabled(self.is_camera_selected and (not self.is_camera_calibration_imported) and (not self.is_internal_camera_calibrated))
-        self._widget.cameraPoseButton.setEnabled(self.is_internal_camera_calibrated and (not self.is_camera_calibration_imported) and (not self.is_mark_complete))
-        self._widget.zDistSpinBox.setEnabled(self.is_internal_camera_calibrated and (not self.is_camera_calibration_imported) and (not self.is_mark_complete))
-        self._widget.markCompleteButton.setEnabled(self.is_internal_camera_calibrated and (not self.is_camera_calibration_imported) and (not self.is_mark_complete))
-        self._widget.saveCalibButton.setEnabled(self.is_internal_camera_calibrated and (not self.is_camera_calibration_imported) and (not self.is_mark_complete))
+        self._widget.pictureButton.setEnabled(self.is_camera_selected and (not self.is_camera_calibration_imported) and (not self.is_internal_camera_calibrated) and (not self.is_import_calib_clicked))
+        self._widget.cameraPoseButton.setEnabled(self.is_internal_camera_calibrated and (not self.is_camera_calibration_imported) and (not self.is_mark_complete) and (not self.is_import_calib_clicked))
+        self._widget.zDistSpinBox.setEnabled(self.is_internal_camera_calibrated and (not self.is_camera_calibration_imported) and (not self.is_mark_complete) and (not self.is_import_calib_clicked))
+        self._widget.markCompleteButton.setEnabled(self.is_internal_camera_calibrated and (not self.is_camera_calibration_imported) and (not self.is_mark_complete) and (not self.is_import_calib_clicked))
+        self._widget.saveCalibButton.setEnabled(self.is_internal_camera_calibrated and (not self.is_camera_calibration_imported) and (not self.is_mark_complete) and (not self.is_import_calib_clicked))
 
-        self._widget.xSpinBox.setEnabled(self.is_camera_pose_calibrated)
-        self._widget.ySpinBox.setEnabled(self.is_camera_pose_calibrated)
-        self._widget.zSpinBox.setEnabled(self.is_camera_pose_calibrated)
+        self._widget.xSpinBox.setEnabled(self.is_camera_pose_calibrated and (not self.is_import_calib_clicked))
+        self._widget.ySpinBox.setEnabled(self.is_camera_pose_calibrated and (not self.is_import_calib_clicked))
+        self._widget.zSpinBox.setEnabled(self.is_camera_pose_calibrated and (not self.is_import_calib_clicked))
 
-        self._widget.upperLeftButton.setEnabled(self.is_camera_pose_calibrated)
-        self._widget.upperRightButton.setEnabled(self.is_camera_pose_calibrated)
-        self._widget.lowerLeftButton.setEnabled(self.is_camera_pose_calibrated)
-        self._widget.lowerRightButton.setEnabled(self.is_camera_pose_calibrated)
+        self._widget.upperLeftButton.setEnabled(self.is_camera_pose_calibrated and (not self.is_import_calib_clicked))
+        self._widget.upperRightButton.setEnabled(self.is_camera_pose_calibrated and (not self.is_import_calib_clicked))
+        self._widget.lowerLeftButton.setEnabled(self.is_camera_pose_calibrated and (not self.is_import_calib_clicked))
+        self._widget.lowerRightButton.setEnabled(self.is_camera_pose_calibrated and (not self.is_import_calib_clicked))
 
         self._widget.saveAsButton.setEnabled(all(self.is_touchpt_recording_done))
-        self._widget.startRVizButton.setEnabled(all(self.is_touchpt_recording_done))
+        self._widget.startRVizButton.setEnabled(all(self.is_touchpt_recording_done) or self.is_import_calib_clicked)
+
+        self._widget.testBedComboBox.setEnabled(not self.is_import_calib_clicked)
+        self._widget.armComboBox.setEnabled(not self.is_import_calib_clicked)
     
     def handle_import_calib_clicked(self):
         print("importing calibration settings")
+        # Get calibration file
+        #file_name = QFileDialog.getOpenFileName(self._widget, "Import Calibration", "/home", "Text files (*.txt)")
+        self.is_import_calib_clicked = True
         self.update_enabled()
 
     def handle_import_cam_clicked(self):
         print("importing camera settings")
+        # Get camera calibration file
+        #file_name = QFileDialog.getOpenFileName(self._widget, "Import Camera Calibration", "/home", "Text files (*.txt)")
+
         self.is_camera_calibration_imported = True
         self.is_internal_camera_calibrated = True
         self.is_camera_pose_calibrated = True
