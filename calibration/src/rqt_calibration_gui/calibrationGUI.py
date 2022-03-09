@@ -51,13 +51,13 @@ class CalibrationGUI(Plugin):
         self.testbed_selected = None
         self.arm_selected = None
         self.camera_selected = None
-        self.total_pictures = 0
-        self.z_dist = 0
         self.camera_distortion = None
         self.camera_matrix = None
         self.camera_transform_matrix = None
         self.arm_transform_matrix = None
 
+        self.total_pictures = 0
+        self.z_dist = 0
 
         # Setup button event listeners
         self._widget.importCalibButton.clicked[bool].connect(self.handle_import_calib_clicked)
@@ -122,23 +122,48 @@ class CalibrationGUI(Plugin):
         # Testing adding in row to camera table
         self.insert_camera_to_table(["Camera 1", "No"])
 
+    def read_camera_calibration_csv(self, filename):
+        with open(filename, "r") as f:
+            csv_reader = csv.reader(f, delimiter = ",", lineterminator="\n")
+            csv_arr = []
+            for row in csv_reader:
+                csv_arr.append(row)
+
+            self.testbed_selected = csv_arr[1][0]
+            self.arm_selected = csv_arr[1][1]
+            self.camera_selected = csv_arr[1][2]
+            self.camera_distortion = csv_arr[1][3]
+            self.camera_matrix = csv_arr[1][4]
+            self.camera_transform_matrix = csv_arr[1][5]
+
     def read_calibration_csv(self, filename):
         with open(filename, "r") as f:
             csv_reader = csv.reader(f, delimiter = ",", lineterminator="\n")
+            csv_arr = []
             for row in csv_reader:
-                print(row)
+                csv_arr.append(row)
+
+            self.testbed_selected = csv_arr[1][0]
+            self.arm_selected = csv_arr[1][1]
+            self.camera_selected = csv_arr[1][2]
+            self.camera_distortion = csv_arr[1][3]
+            self.camera_matrix = csv_arr[1][4]
+            self.camera_transform_matrix = csv_arr[1][5]
+            self.arm_transform_matrix = csv_arr[1][6]
 
     def save_calibration_to_csv(self, filename):
+        filename = filename + ".csv"
         with open(filename,"w") as f:
             csv_writer = csv.writer(f,delimiter=",",lineterminator="\n")
-            csv_writer.writerow(["camera_distortion","camera_matrix","camera_transform_matrix", "arm_transform_matrix"])
-            csv_writer.writerow([self.camera_distortion,self.camera_matrix,self.camera_transform_matrix, self.arm_transform_matrix])
+            csv_writer.writerow(["testbed_selected", "arm_selected", "camera_selected", "camera_distortion","camera_matrix","camera_transform_matrix", "arm_transform_matrix"])
+            csv_writer.writerow([self.testbed_selected, self.arm_selected, self.camera_selected, self.camera_distortion,self.camera_matrix,self.camera_transform_matrix, self.arm_transform_matrix])
 
     def save_camera_calibration_to_csv(self, filename):
+        filename = filename + ".csv"
         with open(filename,"w") as f:
             csv_writer = csv.writer(f,delimiter=",",lineterminator="\n")
-            csv_writer.writerow(["camera_distortion","camera_matrix","camera_transform_matrix"])
-            csv_writer.writerow([self.camera_distortion,self.camera_matrix,self.camera_transform_matrix])
+            csv_writer.writerow(["testbed_selected", "arm_selected", "camera_selected", "camera_distortion","camera_matrix","camera_transform_matrix"])
+            csv_writer.writerow([self.testbed_selected, self.arm_selected, self.camera_selected, self.camera_distortion,self.camera_matrix,self.camera_transform_matrix])
 
     def insert_camera_to_table(self, row_list):
             row_count = self._widget.camTable.rowCount()
@@ -191,12 +216,15 @@ class CalibrationGUI(Plugin):
     def handle_import_cam_clicked(self):
         print("importing camera settings")
         # Get camera calibration file
-        #file_name = QFileDialog.getOpenFileName(self._widget, "Import Camera Calibration", "/home", "Text files (*.txt)")
+        filename, selected_filter = QFileDialog.getOpenFileName(self._widget, "Import Camera Calibration", "/home", "CSV files (*.csv)")
 
-        self.is_camera_calibration_imported = True
-        self.is_internal_camera_calibrated = True
-        self.is_camera_pose_calibrated = True
-        self.is_mark_complete = True
+        if filename != None and filename != "":
+            self.read_camera_calibration_csv(filename)
+            self.is_camera_calibration_imported = True
+            self.is_internal_camera_calibrated = True
+            self.is_camera_pose_calibrated = True
+            self.is_mark_complete = True
+
         self.update_enabled()
 
     def handle_cam_table_item_clicked(self, item):
@@ -204,6 +232,7 @@ class CalibrationGUI(Plugin):
         if item.column() == 0:
             self._widget.currentCamSelectionLabel.setText("Current Selection: " + item.text())
             if item.text() != "None":
+                self.camera_selected = item.text()
                 self.is_camera_selected = True
             else:
                 self.is_camera_selected = False
@@ -254,6 +283,7 @@ class CalibrationGUI(Plugin):
     def handle_testbed_change(self, i):
         if i != 0:
             self.is_testbed_selected = True
+            self.testbed_selected = self._widget.testBedComboBox.currentText()
         else:
             self.is_testbed_selected = False
         print("Testbed index is:", i, "Value:", self._widget.testBedComboBox.currentText())
@@ -262,6 +292,7 @@ class CalibrationGUI(Plugin):
     def handle_arm_change(self, i):
         if i != 0:
             self.is_arm_selected = True
+            self.arm_selected = self._widget.armComboBox.currentText()
         else:
             self.is_arm_selected = False
         print("Arm index is:", i, "Value:", self._widget.armComboBox.currentText())
@@ -305,7 +336,11 @@ class CalibrationGUI(Plugin):
     
     def handle_save_camera_calib_clicked(self):
         print("saving camera calib settings")
-        file_name = QFileDialog.getSaveFileName(self._widget, "Save Camera Calibration", "/home", "Text files (*.txt)")
+        filename, selected_filter = QFileDialog.getSaveFileName(self._widget, "Save Camera Calibration", "/home", "CSV files (*.csv)")
+
+        if filename != None and filename != "":
+            self.save_calibration_to_csv(filename)
+
         self.update_enabled()
     
     def handle_save_as_clicked(self):
@@ -323,3 +358,10 @@ class CalibrationGUI(Plugin):
     
     def handle_start_RViz_clicked(self):
         print("starting RViz")
+        print(self.testbed_selected)
+        print(self.arm_selected)
+        print(self.camera_selected)
+        print(self.camera_distortion)
+        print(self.camera_matrix)
+        print(self.camera_transform_matrix)
+        print(self.arm_transform_matrix)
