@@ -224,6 +224,14 @@ class CalibrationGUI(Plugin):
         except:
             self.create_import_save_error_dialog(filename, "import")
 
+            # Reset values in case they were set when reading garbage csv
+            self.testbed_selected = None
+            self.arm_selected = None
+            self.camera_selected = None
+            self.camera_distortion = None
+            self.camera_matrix = None
+            self.camera_transform_matrix = None
+
         self.update_enabled()
 
 
@@ -242,6 +250,23 @@ class CalibrationGUI(Plugin):
 
         except:
             self.create_import_save_error_dialog(filename, "import")
+
+            # Reset values in case they were set when reading garbage csv
+            self.testbed_selected = None
+            self.arm_selected = None
+            self.camera_selected = None
+            self.camera_distortion = None
+            self.camera_matrix = None
+            self.camera_transform_matrix = None
+
+            self.is_testbed_selected = False
+            self.is_arm_selected = False
+            self.is_camera_selected = False
+
+            self._widget.testBedComboBox.setCurrentIndex(0)
+            self._widget.armComboBox.setCurrentIndex(0)
+
+            self._widget.currentCamSelectionLabel.setText("Current Selection: None")
 
         self.update_enabled()
 
