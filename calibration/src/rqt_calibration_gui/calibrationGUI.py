@@ -122,6 +122,15 @@ class CalibrationGUI(Plugin):
         # Testing adding in row to camera table
         self.insert_camera_to_table(["Camera 1", "No"])
 
+    def create_import_save_error_dialog(self, filename, import_or_save):
+        error_dialog = QMessageBox(self._widget)
+        error_dialog.setIcon(QMessageBox.Critical)
+        error_dialog.setText("Error")
+        error_dialog.setInformativeText("Failed to " + import_or_save + " " + filename + "! The file may not be formatted correctly")
+        error_dialog.setWindowTitle("Error")
+        error_dialog.exec_()
+
+
     def read_camera_calibration_csv(self, filename):
         with open(filename, "r") as f:
             csv_reader = csv.reader(f, delimiter = ",", lineterminator="\n")
@@ -204,26 +213,35 @@ class CalibrationGUI(Plugin):
     
     def handle_import_calib_clicked(self):
         print("importing calibration settings")
-        # Get calibration file
-        filename, selecter_filter = QFileDialog.getOpenFileName(self._widget, "Import Calibration", "/home", "CSV files (*.csv)")
 
-        if filename != None and filename != "":
-            self.read_calibration_csv(filename)
-            self.is_import_calib_clicked = True
+        try:
+            # Get calibration file
+            filename, selecter_filter = QFileDialog.getOpenFileName(self._widget, "Import Calibration", "/home", "CSV files (*.csv)")
+
+            if filename != None and filename != "":
+                self.read_calibration_csv(filename)
+                self.is_import_calib_clicked = True
+        except:
+            self.create_import_save_error_dialog(filename, "import")
 
         self.update_enabled()
+
 
     def handle_import_cam_clicked(self):
         print("importing camera settings")
         # Get camera calibration file
         filename, selected_filter = QFileDialog.getOpenFileName(self._widget, "Import Camera Calibration", "/home", "CSV files (*.csv)")
 
-        if filename != None and filename != "":
-            self.read_camera_calibration_csv(filename)
-            self.is_camera_calibration_imported = True
-            self.is_internal_camera_calibrated = True
-            self.is_camera_pose_calibrated = True
-            self.is_mark_complete = True
+        try:
+            if filename != None and filename != "":
+                self.read_camera_calibration_csv(filename)
+                self.is_camera_calibration_imported = True
+                self.is_internal_camera_calibrated = True
+                self.is_camera_pose_calibrated = True
+                self.is_mark_complete = True
+
+        except:
+            self.create_import_save_error_dialog(filename, "import")
 
         self.update_enabled()
 
@@ -336,10 +354,13 @@ class CalibrationGUI(Plugin):
     
     def handle_save_camera_calib_clicked(self):
         print("saving camera calib settings")
-        filename, selected_filter = QFileDialog.getSaveFileName(self._widget, "Save Camera Calibration", "/home", "CSV files (*.csv)")
+        try:
+            filename, selected_filter = QFileDialog.getSaveFileName(self._widget, "Save Camera Calibration", "/home", "CSV files (*.csv)")
 
-        if filename != None and filename != "":
-            self.save_calibration_to_csv(filename)
+            if filename != None and filename != "":
+                self.save_calibration_to_csv(filename)
+        except:
+            self.create_import_save_error_dialog(filename, "save")
 
         self.update_enabled()
     
@@ -351,10 +372,13 @@ class CalibrationGUI(Plugin):
 
         self.arm_transform_matrix = response.transform_matrix
 
-        filename, selected_filter = QFileDialog.getSaveFileName(self._widget, "Save Calibration", "/home", "CSV files (*.csv)")
+        try:
+            filename, selected_filter = QFileDialog.getSaveFileName(self._widget, "Save Calibration", "/home", "CSV files (*.csv)")
 
-        if filename != None and filename != "":
-            self.save_calibration_to_csv(filename)
+            if filename != None and filename != "":
+                self.save_calibration_to_csv(filename)
+        except:
+            self.create_import_save_error_dialog(filename, "save")
     
     def handle_start_RViz_clicked(self):
         print("starting RViz")
