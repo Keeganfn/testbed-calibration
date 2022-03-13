@@ -48,16 +48,20 @@ class CalibrationGUI(Plugin):
         rospy.wait_for_service("record_touchpoint_srv")
         self.record_touchpoint_client = rospy.ServiceProxy("record_touchpoint_srv", ArmRecordPointSRV)
 
+        # Stored values of calibration
         self.testbed_selected = None
         self.arm_selected = None
         self.camera_selected = None
         self.camera_distortion = None
         self.camera_matrix = None
+        self.camera_matrix_step = None
         self.camera_transform_matrix = None
+        self.camera_transform_matrix_step = None
         self.arm_transform_matrix = None
+        self.arm_transform_matrix_step = None
+        self.z_dist = 0
 
         self.total_pictures = 0
-        self.z_dist = 0
 
         # Setup button event listeners
         self._widget.importCalibButton.clicked[bool].connect(self.handle_import_calib_clicked)
@@ -76,6 +80,10 @@ class CalibrationGUI(Plugin):
         # Setup combo box event listeners
         self._widget.testBedComboBox.currentIndexChanged.connect(self.handle_testbed_change)
         self._widget.armComboBox.currentIndexChanged.connect(self.handle_arm_change)
+
+        # Z-dist changed manually
+        self._widget.zDistSpinBox.valueChanged.connect(self.handle_z_spinbox_change)
+
 
         # Table
         self._widget.camTable.itemClicked.connect(self.handle_cam_table_item_clicked)
@@ -122,6 +130,17 @@ class CalibrationGUI(Plugin):
         # Testing adding in row to camera table
         self.insert_camera_to_table(["Camera 1", "No"])
 
+    # Updating z dist manually
+    def update_z_dist_in_camera_matrices(self, new_z):
+        camera_matrix_list = list(self.camera_matrix)
+        camera_matrix_list[-1] = new_z
+        self.camera_matrix = tuple(camera_matrix_list)
+
+        camera_transform_matrix_list = list(self.camera_transform_matrix)
+        camera_transform_matrix_list[-1] = new_z
+        self.camera_transform_matrix = tuple(camera_transform_matrix_list)
+
+    # Dialog for import / save buttons on failure
     def create_import_save_error_dialog(self, filename, import_or_save):
         error_dialog = QMessageBox(self._widget)
         error_dialog.setIcon(QMessageBox.Critical)
@@ -129,7 +148,6 @@ class CalibrationGUI(Plugin):
         error_dialog.setInformativeText("Failed to " + import_or_save + " " + filename + "! The file may not be formatted correctly")
         error_dialog.setWindowTitle("Error")
         error_dialog.exec_()
-
 
     def read_camera_calibration_csv(self, filename):
         with open(filename, "r") as f:
@@ -142,8 +160,10 @@ class CalibrationGUI(Plugin):
             self.arm_selected = csv_arr[1][1]
             self.camera_selected = csv_arr[1][2]
             self.camera_distortion = csv_arr[1][3]
-            self.camera_matrix = csv_arr[1][4]
-            self.camera_transform_matrix = csv_arr[1][5]
+            self.camera_matrix_step = csv_arr[1][4]
+            self.camera_matrix = csv_arr[1][5]
+            self.camera_transform_matrix_step = csv_arr[1][6]
+            self.camera_transform_matrix = csv_arr[1][7]
 
     def read_calibration_csv(self, filename):
         with open(filename, "r") as f:
@@ -156,24 +176,38 @@ class CalibrationGUI(Plugin):
             self.arm_selected = csv_arr[1][1]
             self.camera_selected = csv_arr[1][2]
             self.camera_distortion = csv_arr[1][3]
-            self.camera_matrix = csv_arr[1][4]
-            self.camera_transform_matrix = csv_arr[1][5]
-            self.arm_transform_matrix = csv_arr[1][6]
+            self.camera_matrix_step = csv_arr[1][4]
+            self.camera_matrix = csv_arr[1][5]
+            self.camera_transform_matrix_step = csv_arr[1][6]
+            self.camera_transform_matrix = csv_arr[1][7]
+            self.arm_transform_matrix_step = csv_arr[1][8]
+            self.arm_transform_matrix = csv_arr[1][9]
 
     def save_calibration_to_csv(self, filename):
         filename = filename + ".csv"
         with open(filename,"w") as f:
             csv_writer = csv.writer(f,delimiter=",",lineterminator="\n")
-            csv_writer.writerow(["testbed_selected", "arm_selected", "camera_selected", "camera_distortion","camera_matrix","camera_transform_matrix", "arm_transform_matrix"])
-            csv_writer.writerow([self.testbed_selected, self.arm_selected, self.camera_selected, self.camera_distortion,self.camera_matrix,self.camera_transform_matrix, self.arm_transform_matrix])
+            csv_writer.writerow(["testbed_selected", "arm_selected", "camera_selected", 
+                                 "camera_distortion", "camera_matrix_step", "camera_matrix",
+                                 "camera_transform_matrix_step", "camera_transform_matrix", 
+                                 "arm_transform_matrix_step", "arm_transform_matrix"])
+            csv_writer.writerow([self.testbed_selected, self.arm_selected, self.camera_selected,
+                                 self.camera_distortion, self.camera_matrix_step, self.camera_matrix,
+                                 self.camera_transform_matrix_step, self.camera_transform_matrix, 
+                                 self.arm_transform_matrix_step, self.arm_transform_matrix])
 
     def save_camera_calibration_to_csv(self, filename):
         filename = filename + ".csv"
         with open(filename,"w") as f:
             csv_writer = csv.writer(f,delimiter=",",lineterminator="\n")
-            csv_writer.writerow(["testbed_selected", "arm_selected", "camera_selected", "camera_distortion","camera_matrix","camera_transform_matrix"])
-            csv_writer.writerow([self.testbed_selected, self.arm_selected, self.camera_selected, self.camera_distortion,self.camera_matrix,self.camera_transform_matrix])
+            csv_writer.writerow(["testbed_selected", "arm_selected", "camera_selected",
+                                 "camera_distortion","camera_matrix_step", "camera_matrix", 
+                                 "camera_transform_matrix_step", "camera_transform_matrix"])
+            csv_writer.writerow([self.testbed_selected, self.arm_selected, self.camera_selected, 
+                                 self.camera_distortion, self.camera_matrix_step, self.camera_matrix,
+                                 self.camera_transform_matrix_step, self.camera_transform_matrix])
 
+    # Adding cameras into the table
     def insert_camera_to_table(self, row_list):
             row_count = self._widget.camTable.rowCount()
             self._widget.camTable.setRowCount(row_count+1)
@@ -184,6 +218,7 @@ class CalibrationGUI(Plugin):
                 self._widget.camTable.setItem(row_count, curr_col, item)
                 curr_col += 1
 
+    # Updates what is greyed out
     def update_enabled(self):
         self._widget.camTable.setEnabled(self.is_testbed_selected and self.is_arm_selected and (not self.is_import_calib_clicked))
         self._widget.importCamButton.setEnabled(self.is_testbed_selected and self.is_arm_selected)
@@ -211,6 +246,16 @@ class CalibrationGUI(Plugin):
         self._widget.testBedComboBox.setEnabled(not self.is_import_calib_clicked)
         self._widget.armComboBox.setEnabled(not self.is_import_calib_clicked)
     
+
+    def record_touchpoint(self,location):
+        response = ArmRecordPointSRVResponse()
+        response = self.record_touchpoint_client(location)
+        rospy.loginfo("TOUCHPOINT RECORD: {0}".format(response.success))
+
+    ####################################################################################
+    ### GUI Event handlers
+    ####################################################################################
+
     def handle_import_calib_clicked(self):
         print("importing calibration settings")
 
@@ -230,7 +275,11 @@ class CalibrationGUI(Plugin):
             self.camera_selected = None
             self.camera_distortion = None
             self.camera_matrix = None
+            self.camera_matrix_step = None
             self.camera_transform_matrix = None
+            self.camera_transform_matrix_step = None
+            self.arm_transform_matrix = None
+            self.arm_transform_matrix_step = None
 
         self.update_enabled()
 
@@ -256,7 +305,9 @@ class CalibrationGUI(Plugin):
             self.arm_selected = None
             self.camera_selected = None
             self.camera_distortion = None
+            self.camera_matrix_step = None
             self.camera_matrix = None
+            self.camera_transform_matrix_step = None
             self.camera_transform_matrix = None
 
             self.is_testbed_selected = False
@@ -281,7 +332,6 @@ class CalibrationGUI(Plugin):
                 self.is_camera_selected = False
 
         self.update_enabled()
-
 
     def handle_take_picture_clicked(self):
         print("taking picture")
@@ -311,17 +361,19 @@ class CalibrationGUI(Plugin):
 
         self.camera_distortion = response.distortion
         self.camera_matrix = response.camera_matrix
+        self.camera_matrix_step = response.camera_matrix_step
         self.camera_transform_matrix = response.transform_matrix
+        self.camera_transform_matrix_step = response.transform_matrix_step
 
         self._widget.zDistFoundLabel.setText("Z Distance Found: "+ str(self.z_dist))
 
         self.is_camera_pose_calibrated = True
         self.update_enabled()
 
-    def record_touchpoint(self,location):
-        response = ArmRecordPointSRVResponse()
-        response = self.record_touchpoint_client(location)
-        rospy.loginfo("TOUCHPOINT RECORD: {0}".format(response.success))
+    def handle_z_spinbox_change(self, new_value):
+        self.z_dist = new_value
+
+        self.update_z_dist_in_camera_matrices(self.z_dist)
 
     def handle_testbed_change(self, i):
         if i != 0:
@@ -396,6 +448,7 @@ class CalibrationGUI(Plugin):
         rospy.loginfo("FOUND: {0}".format(response.transform_matrix))
 
         self.arm_transform_matrix = response.transform_matrix
+        self.arm_transform_matrix_step = response.transform_matrix_step
 
         try:
             filename, selected_filter = QFileDialog.getSaveFileName(self._widget, "Save Calibration", "/home", "CSV files (*.csv)")
@@ -407,10 +460,4 @@ class CalibrationGUI(Plugin):
     
     def handle_start_RViz_clicked(self):
         print("starting RViz")
-        print(self.testbed_selected)
-        print(self.arm_selected)
-        print(self.camera_selected)
-        print(self.camera_distortion)
-        print(self.camera_matrix)
-        print(self.camera_transform_matrix)
-        print(self.arm_transform_matrix)
+
