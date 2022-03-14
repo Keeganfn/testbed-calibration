@@ -133,11 +133,19 @@ class CalibrationGUI(Plugin):
     # Updating z dist manually
     def update_z_dist_in_camera_matrices(self, new_z):
         camera_matrix_list = list(self.camera_matrix)
-        camera_matrix_list[-1] = new_z
-        self.camera_matrix = tuple(camera_matrix_list)
-
         camera_transform_matrix_list = list(self.camera_transform_matrix)
-        camera_transform_matrix_list[-1] = new_z
+
+        if self.camera_matrix_step == 3:
+            camera_matrix_list[-1] = new_z
+        elif self.camera_matrix_step == 4:
+            camera_matrix_list[-5] = new_z
+
+        if self.camera_transform_matrix_step == 3:
+            camera_transform_matrix_list[-1] = new_z
+        elif self.camera_transform_matrix_step == 4:
+            camera_transform_matrix_list[-5] = new_z
+
+        self.camera_matrix = tuple(camera_matrix_list)
         self.camera_transform_matrix = tuple(camera_transform_matrix_list)
 
     # Dialog for import / save buttons on failure
@@ -460,4 +468,7 @@ class CalibrationGUI(Plugin):
     
     def handle_start_RViz_clicked(self):
         print("starting RViz")
+        print(self.camera_matrix)
+        print(self.camera_transform_matrix)
+        print(self.arm_transform_matrix)
 
