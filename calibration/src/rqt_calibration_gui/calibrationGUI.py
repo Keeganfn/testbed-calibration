@@ -247,9 +247,9 @@ class CalibrationGUI(Plugin):
 
         camera_pose_enabled = self.is_internal_camera_calibrated and (not self.is_camera_calibration_imported) and (not self.is_mark_complete) and (not self.is_import_calib_clicked)
         self._widget.cameraPoseButton.setEnabled(camera_pose_enabled)
-        self._widget.zDistSpinBox.setEnabled(camera_pose_enabled)
+        self._widget.zDistSpinBox.setEnabled(camera_pose_enabled and self.is_camera_pose_calibrated)
         self._widget.markCompleteButton.setEnabled(camera_pose_enabled and self.is_camera_pose_calibrated)
-        self._widget.saveCalibButton.setEnabled(camera_pose_enabled)
+        self._widget.saveCalibButton.setEnabled(camera_pose_enabled and self.is_camera_pose_calibrated)
 
         touchpt_section_enabled = self.is_camera_pose_calibrated and self.is_mark_complete and (not self.is_import_calib_clicked)
         self._widget.xSpinBox.setEnabled(touchpt_section_enabled)
