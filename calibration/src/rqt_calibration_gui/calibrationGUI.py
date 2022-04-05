@@ -60,6 +60,7 @@ class CalibrationGUI(Plugin):
         self.arm_transform_matrix = None
         self.arm_transform_matrix_step = None
         self.z_dist = 0
+        self.arm_initial_guess = [0,0,0]
 
         self.total_pictures = 0
 
@@ -83,6 +84,11 @@ class CalibrationGUI(Plugin):
 
         # Z-dist changed manually
         self._widget.zDistSpinBox.valueChanged.connect(self.handle_z_spinbox_change)
+
+        # Initial guesses for arm
+        self._widget.xSpinBox.valueChanged.connect(self.handle_initial_guess_x_spinbox_change)
+        self._widget.ySpinBox.valueChanged.connect(self.handle_initial_guess_y_spinbox_change)
+        self._widget.zSpinBox.valueChanged.connect(self.handle_initial_guess_z_spinbox_change)
 
 
         # Table
@@ -118,15 +124,16 @@ class CalibrationGUI(Plugin):
         self._widget.saveAsButton.setEnabled(False)
         self._widget.startRVizButton.setEnabled(False)
 
+        # Csv headers
+        self.csv_calibration_header = ["testbed_selected", "arm_selected", "camera_selected", 
+                             "camera_distortion", "camera_matrix_step", "camera_matrix",
+                             "camera_transform_matrix_step", "camera_transform_matrix", 
+                             "arm_transform_matrix_step", "arm_transform_matrix"]
 
-        # Get zdist value manually 
-        #self._widget.zDistSpinBox.value()
+        self.csv_camera_header = ["testbed_selected", "arm_selected", "camera_selected", 
+                             "camera_distortion", "camera_matrix_step", "camera_matrix",
+                             "camera_transform_matrix_step", "camera_transform_matrix"] 
 
-        #Inital guess values
-        #self._widget.xSpinBox.value()
-        #self._widget.ySpinBox.value()
-        #self._widget.zSpinBox.value()
-        
         # Testing adding in row to camera table
         self.insert_camera_to_table(["Camera 1", "No"])
 
@@ -149,11 +156,11 @@ class CalibrationGUI(Plugin):
         self.camera_transform_matrix = tuple(camera_transform_matrix_list)
 
     # Dialog for import / save buttons on failure
-    def create_import_save_error_dialog(self, filename, import_or_save):
+    def create_error_dialog(self, error_msg):
         error_dialog = QMessageBox(self._widget)
         error_dialog.setIcon(QMessageBox.Critical)
         error_dialog.setText("Error")
-        error_dialog.setInformativeText("Failed to " + import_or_save + " " + filename + "! The file may not be formatted correctly")
+        error_dialog.setInformativeText(error_msg)
         error_dialog.setWindowTitle("Error")
         error_dialog.exec_()
 
@@ -163,6 +170,11 @@ class CalibrationGUI(Plugin):
             csv_arr = []
             for row in csv_reader:
                 csv_arr.append(row)
+
+            # Make sure csv column headers are the same
+            for idx, col_header in enumerate(csv_arr[0]):
+                if col_header != self.csv_camera_header[idx]:
+                    raise Exception
 
             self.testbed_selected = csv_arr[1][0]
             self.arm_selected = csv_arr[1][1]
@@ -180,6 +192,11 @@ class CalibrationGUI(Plugin):
             for row in csv_reader:
                 csv_arr.append(row)
 
+            # Make sure csv column headers are the same
+            for idx, col_header in enumerate(csv_arr[0]):
+                if col_header != self.csv_calibration_header[idx]:
+                    raise Exception
+
             self.testbed_selected = csv_arr[1][0]
             self.arm_selected = csv_arr[1][1]
             self.camera_selected = csv_arr[1][2]
@@ -195,10 +212,7 @@ class CalibrationGUI(Plugin):
         filename = filename + ".csv"
         with open(filename,"w") as f:
             csv_writer = csv.writer(f,delimiter=",",lineterminator="\n")
-            csv_writer.writerow(["testbed_selected", "arm_selected", "camera_selected", 
-                                 "camera_distortion", "camera_matrix_step", "camera_matrix",
-                                 "camera_transform_matrix_step", "camera_transform_matrix", 
-                                 "arm_transform_matrix_step", "arm_transform_matrix"])
+            csv_writer.writerow(self.csv_calibration_header)
             csv_writer.writerow([self.testbed_selected, self.arm_selected, self.camera_selected,
                                  self.camera_distortion, self.camera_matrix_step, self.camera_matrix,
                                  self.camera_transform_matrix_step, self.camera_transform_matrix, 
@@ -208,9 +222,7 @@ class CalibrationGUI(Plugin):
         filename = filename + ".csv"
         with open(filename,"w") as f:
             csv_writer = csv.writer(f,delimiter=",",lineterminator="\n")
-            csv_writer.writerow(["testbed_selected", "arm_selected", "camera_selected",
-                                 "camera_distortion","camera_matrix_step", "camera_matrix", 
-                                 "camera_transform_matrix_step", "camera_transform_matrix"])
+            csv_writer.writerow(self.csv_camera_header)
             csv_writer.writerow([self.testbed_selected, self.arm_selected, self.camera_selected, 
                                  self.camera_distortion, self.camera_matrix_step, self.camera_matrix,
                                  self.camera_transform_matrix_step, self.camera_transform_matrix])
@@ -274,8 +286,8 @@ class CalibrationGUI(Plugin):
             if filename != None and filename != "":
                 self.read_calibration_csv(filename)
                 self.is_import_calib_clicked = True
-        except:
-            self.create_import_save_error_dialog(filename, "import")
+        except Exception as ex:
+            self.create_error_dialog("Failed to import " + filename + ". Check the file format." + str(ex))
 
             # Reset values in case they were set when reading garbage csv
             self.testbed_selected = None
@@ -305,8 +317,8 @@ class CalibrationGUI(Plugin):
                 self.is_camera_pose_calibrated = True
                 self.is_mark_complete = True
 
-        except:
-            self.create_import_save_error_dialog(filename, "import")
+        except Exception as ex:
+            self.create_error_dialog("Failed to import " + filename + ". Check the file format." + str(ex))
 
             # Reset values in case they were set when reading garbage csv
             self.testbed_selected = None
@@ -383,6 +395,15 @@ class CalibrationGUI(Plugin):
 
         self.update_z_dist_in_camera_matrices(self.z_dist)
 
+    def handle_initial_guess_x_spinbox_change(self, new_value):
+        self.arm_initial_guess[0] = new_value
+
+    def handle_initial_guess_y_spinbox_change(self, new_value):
+        self.arm_initial_guess[1] = new_value
+
+    def handle_initial_guess_z_spinbox_change(self, new_value):
+        self.arm_initial_guess[2] = new_value
+
     def handle_testbed_change(self, i):
         if i != 0:
             self.is_testbed_selected = True
@@ -443,9 +464,9 @@ class CalibrationGUI(Plugin):
             filename, selected_filter = QFileDialog.getSaveFileName(self._widget, "Save Camera Calibration", "/home", "CSV files (*.csv)")
 
             if filename != None and filename != "":
-                self.save_calibration_to_csv(filename)
+                self.save_camera_calibration_to_csv(filename)
         except:
-            self.create_import_save_error_dialog(filename, "save")
+            self.create_error_dialog("Failed to save camera calibration as " + filename)
 
         self.update_enabled()
     
@@ -464,7 +485,7 @@ class CalibrationGUI(Plugin):
             if filename != None and filename != "":
                 self.save_calibration_to_csv(filename)
         except:
-            self.create_import_save_error_dialog(filename, "save")
+            self.create_error_dialog("Failed to save calibration as " + filename)
     
     def handle_start_RViz_clicked(self):
         print("starting RViz")
