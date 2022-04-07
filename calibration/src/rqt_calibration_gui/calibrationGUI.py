@@ -473,7 +473,7 @@ class CalibrationGUI(Plugin):
     def handle_save_as_clicked(self):
         print("saving settings")
         response = ArmCalibrationSRV()
-        response = self.arm_calibration_client(1,2,3)
+        response = self.arm_calibration_client(self.arm_initial_guess[0], self.arm_initial_guess[1], self.arm_initial_guess[2])
         rospy.loginfo("FOUND: {0}".format(response.transform_matrix))
 
         self.arm_transform_matrix = response.transform_matrix
@@ -489,6 +489,12 @@ class CalibrationGUI(Plugin):
     
     def handle_start_RViz_clicked(self):
         print("starting RViz")
+        response = ArmCalibrationSRV()
+        response = self.arm_calibration_client(self.arm_initial_guess[0], self.arm_initial_guess[1], self.arm_initial_guess[2])
+        rospy.loginfo("FOUND: {0}".format(response.transform_matrix))
+
+        self.arm_transform_matrix = response.transform_matrix
+
         print(self.camera_matrix)
         print(self.camera_transform_matrix)
         print(self.arm_transform_matrix)
