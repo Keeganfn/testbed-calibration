@@ -4,8 +4,10 @@ import rospy
 import sys
 
 import numpy as np
+from numpy import linalg as LA
 import cv2 as cv
 import glob
+import tf
 from cv_bridge import CvBridge, CvBridgeError
 
 from sensor_msgs.msg import Image
@@ -225,9 +227,10 @@ class CameraCalibration:
             (corners, markerIDs, rejected) = cv.aruco.detectMarkers(self.aruco_photo, arucoDict, parameters=arucoParams,cameraMatrix=camera_matrix, distCoeff=distortion)
 
             # Check that at least one ArUco marker was detected
-            if markerIDs is not None:
+            if markerIDs is not None and len(markerIDs) == 4:
                 # Draw a square around detected markers in the video frame, pretty sure this won't work anymore with how we're reading values
                 # cv.aruco.drawDetectedMarkers(self.aruco_photo, corners, markerIDs)
+
 
                 # Get the rotation and translation vectors
                 rvecs, tvecs, objPoints = cv.aruco.estimatePoseSingleMarkers(
@@ -243,50 +246,117 @@ class CameraCalibration:
                     # uncomment to draw axis on image, again not sure how this will work with how we're saving images
                     # cv.aruco.drawAxis(frame, mtx, dist, rvecs[i], tvecs[i], 0.05)
 
-                    # flip rotation matrix by 180 degrees for camera frame ? Switch to euler angle ?
+                # find two opposite corners
+                midpoint1_x = 0
+                midpoint2_x = 0
+                midpoint1_y = 0
+                midpoint2_y = 0
+
+                distance1 = LA.norm(tvecs[0] - tvecs[1])
+                distance2 = LA.norm(tvecs[0] - tvecs[2])
+                distance3 = LA.norm(tvecs[0] - tvecs[3])
+
+                rospy.loginfo("CAMERA CALIBRATION - Distance 1: {0}".format(distance1))
+                rospy.loginfo("CAMERA CALIBRATION - Distance 2: {0}".format(distance2))
+                rospy.loginfo("CAMERA CALIBRATION - Distance 3: {0}".format(distance3))
+
+                if distance1 >= distance2 and distance1 >= distance2:
+                    midpoint1_x = (tvecs[0][0] + tvecs[1][0]) / 2
+                    midpoint1_y = (tvecs[0][1] + tvecs[1][1]) / 2
+
+                    midpoint2_x = (tvecs[2][0] + tvecs[3][0]) / 2
+                    midpoint2_y = (tvecs[2][1] + tvecs[3][1]) / 2
+                elif distance2 > distance3:
+                    midpoint1_x = (tvecs[0][0] + tvecs[2][0]) / 2
+                    midpoint1_y = (tvecs[0][1] + tvecs[2][1]) / 2
+
+                    midpoint2_x = (tvecs[1][0] + tvecs[3][0]) / 2
+                    midpoint2_y = (tvecs[1][1] + tvecs[3][1]) / 2
+                else:
+                    midpoint1_x = (tvecs[0][0] + tvecs[3][0]) / 2
+                    midpoint1_y = (tvecs[0][1] + tvecs[3][1]) / 2
+
+                    midpoint2_x = (tvecs[1][0] + tvecs[2][0]) / 2
+                    midpoint2_y = (tvecs[1][1] + tvecs[2][1]) / 2
 
 
+                # once we find two opposite corners of the table, calculate the midpoint
+                center_rotation, _ = cv.Rodrigues(np.array([0,0,0]))
+                center_translation = np.array([(midpoint1_x+midpoint2_x) / 2, (midpoint1_y+midpoint1_y) / 2, height])
 
-                # figure out this part
-                # need to triangulate the center of the table using arucos
-                center_rotation = [[1,2,3],[4,5,6],[7,8,9]]
-                center_translation = [1,2,3]
+                rospy.loginfo("CAMERA CALIBRATION - Camera-to-Table Rotation Matrix: {0}".format(center_rotation))
+                rospy.loginfo("CAMERA CALIBRATION - Camera-to-Table Translation Vector: {0}".format(center_translation))
 
-                # the matrix must also be inverted from Camera-to-tableCenter to tableCenter-to-Camera
+                # invert information before we combine into transform matrix
+                center_rotation, center_translation = inversePerspective(center_rotation, center_translation)
+                rospy.loginfo("CAMERA CALIBRATION - Table-to-Camera Rotation Matrix: {0}".format(center_rotation))
+                rospy.loginfo("CAMERA CALIBRATION - Table-to-Camera Translation Vector: {0}".format(center_translation))
 
-
-                # need to override the height using the value from before
-                center_translation[2] = height
-                # matrices must also be combined into 4x4 transformation matrix
+                # matrices must also be combined into 4x4 transformation matrix, also switches from rodrigues to quaternion
                 transform_matrix = combine(center_rotation, center_translation)
-
-                rospy.loginfo("CAMERA CALIBRATION - combined transformation matrix: {0}".format(transform_matrix))
+                rospy.loginfo("CAMERA CALIBRATION - Table-to-Camera Transform Matrix: {0}".format(transform_matrix))
 
             else:
-                rospy.loginfo("CAMERA CALIBRATION - Couldn't identify any arucos !!")
+                rospy.loginfo("CAMERA CALIBRATION - Problem in identifying arucos !!")
+                rospy.loginfo("CAMERA CALIBRATION - markerIDs: {0}".format(markerIDs))
         return transform_matrix
 
 
     def combine(rotation, tvec):
-        combine = np.zeros((4,4))
-        combine[0][0] = rotation[0][0]
-        combine[0][1] = rotation[0][1]
-        combine[0][2] = rotation[0][2]
+        combine = np.array([[0, 0, 0, 0],
+                            [0, 0, 0, 0],
+                            [0, 0, 0, 0],
+                            [0, 0, 0, 1]],
+                            dtype=float)
+        combine[:3, :3] = rotation
+
+        # convert the matrix to a quaternion vector
+        quaternion = tf.transformations.quaternion_from_matrix(combine)
+
+        # convert quaternion vector to 3x3 matrix
+        q0 = quaternion[0]
+        q1 = quaternion[1]
+        q2 = quaternion[2]
+        q3 = quaternion[3]
+
+        # First row of the rotation matrix
+        r00 = 2 * (q0 * q0 + q1 * q1) - 1
+        r01 = 2 * (q1 * q2 - q0 * q3)
+        r02 = 2 * (q1 * q3 + q0 * q2)
+
+        # Second row of the rotation matrix
+        r10 = 2 * (q1 * q2 + q0 * q3)
+        r11 = 2 * (q0 * q0 + q2 * q2) - 1
+        r12 = 2 * (q2 * q3 - q0 * q1)
+
+        # Third row of the rotation matrix
+        r20 = 2 * (q1 * q3 - q0 * q2)
+        r21 = 2 * (q2 * q3 + q0 * q1)
+        r22 = 2 * (q0 * q0 + q3 * q3) - 1
+
+        # 3x3 quaternion rotation matrix
+        quat_mat = np.array([[r00, r01, r02],
+                               [r10, r11, r12],
+                               [r20, r21, r22]])
+
+        # add to transform matrix
+        combine[:3, :3] = quat_mat
+
+        # add translation component
         combine[0][3] = tvec[0]
-
-        combine[1][0] = rotation[1][0]
-        combine[1][1] = rotation[1][1]
-        combine[1][2] = rotation[1][2]
         combine[1][3] = tvec[1]
-
-        combine[2][0] = rotation[2][0]
-        combine[2][1] = rotation[2][1]
-        combine[2][2] = rotation[2][2]
         combine[2][3] = tvec[2]
 
-        combine[3][3] = 1
-
         return combine
+
+
+    def inversePerspective(rotation, tvec):
+        # transpose the matrix
+        invRotation = np.matrix(rotation).T
+        # inverses translation vector
+        invTvec = np.dot(invRotation, np.matrix(-tvec))
+        # return back to translation vector
+        return invRotation, invTvec
 
 
 if __name__ == "__main__":
