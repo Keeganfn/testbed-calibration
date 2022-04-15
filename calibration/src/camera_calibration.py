@@ -173,49 +173,43 @@ class CameraCalibration:
         # otherwise, use the matrices given and unpack them
         else:
             rospy.loginfo("CAMERA CALIBRATION - Using given values")
-            rospy.loginfo("CAMERA MAT: {0}".format(request.camera_matrix))
-            rospy.loginfo("DISTORTION: {0}".format(request.distortion))
+
             camera_matrix = request.camera_matrix
             distortion = request.distortion
             camera_matrix = np.array([ [camera_matrix[1],camera_matrix[2],camera_matrix[3]], [camera_matrix[4],camera_matrix[5],camera_matrix[6]], [camera_matrix[7],camera_matrix[8],camera_matrix[9]] ])
             distortion = np.array([distortion[1],distortion[2],distortion[3],distortion[4],distortion[5]])
 
+        rospy.loginfo("CAMERA MAT: {0}".format(request.camera_matrix))
+        rospy.loginfo("DISTORTION: {0}".format(request.distortion))
         return distortion, camera_matrix
 
 
 
     def calibrate_height(self, request, distortion, camera_matrix):
-        height = -1
-        # if we have not been given height (height == -1) use the photo to read the checkerboard to find height
-        if request.height == -1:
-            rospy.loginfo("CAMERA CALIBRATION - Calculating height with chessboard")
-            if self.aruco_photo is None:
-                rospy.loginfo("CAMERA CALIBRATION - No aruco photo found !!")
-            else:
-                gray = cv.cvtColor(self.aruco_photo, cv.COLOR_BGR2GRAY)
-                ret, corners = cv.findChessboardCorners(gray, (boardY,boardX), None)
-
-                if ret == True:
-                    rospy.loginfo("CAMERA CALIBRATION - Checkerboard found on table")
-                    objp = np.zeros((boardX*boardY,3), np.float32)
-                    objp[:,:2] = np.mgrid[0:boardY,0:boardX].T.reshape(-1,2)
-                    corners2 = cv.cornerSubPix(gray,corners,(11,11),(-1,-1),criteria)
-
-                    # Find the rotation and translation vectors.
-                    _, rvec, tvec, inliers = cv.solvePnPRansac(objp, corners2, camera_matrix, distortion)
-
-                    rospy.loginfo("CAMERA CALIBRATION - Found Translation Vector: {0}".format(tvec))
-                    rospy.loginfo("CAMERA CALIBRATION - Found Rotation Vector: {0}".format(rvec))
-                    rospy.loginfo("CAMERA CALIBRATION - New Height Value: {0}".format(tvec[2][0]))
-
-                    height = tvec[2][0]
-                else:
-                    rospy.loginfo("CAMERA CALIBRATION - Couldn't find chessboard for height calculation !!")
-
-        # otherwise, use height given to use
+        height = 0
+        rospy.loginfo("CAMERA CALIBRATION - Calculating height with chessboard")
+        if self.aruco_photo is None:
+            rospy.loginfo("CAMERA CALIBRATION - No aruco photo found !!")
         else:
-            rospy.loginfo("CAMERA CALIBRATION - Using given height")
-            height = request.height
+            gray = cv.cvtColor(self.aruco_photo, cv.COLOR_BGR2GRAY)
+            ret, corners = cv.findChessboardCorners(gray, (boardY,boardX), None)
+
+            if ret == True:
+                rospy.loginfo("CAMERA CALIBRATION - Checkerboard found on table")
+                objp = np.zeros((boardX*boardY,3), np.float32)
+                objp[:,:2] = np.mgrid[0:boardY,0:boardX].T.reshape(-1,2)
+                corners2 = cv.cornerSubPix(gray,corners,(11,11),(-1,-1),criteria)
+
+                # Find the rotation and translation vectors.
+                _, rvec, tvec, inliers = cv.solvePnPRansac(objp, corners2, camera_matrix, distortion)
+
+                rospy.loginfo("CAMERA CALIBRATION - Found Translation Vector: {0}".format(tvec))
+                rospy.loginfo("CAMERA CALIBRATION - Found Rotation Vector: {0}".format(rvec))
+                rospy.loginfo("CAMERA CALIBRATION - New Height Value: {0}".format(tvec[2][0]))
+
+                height = tvec[2][0]
+            else:
+                rospy.loginfo("CAMERA CALIBRATION - Couldn't find chessboard for height calculation !!")
         return height
 
 
