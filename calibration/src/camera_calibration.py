@@ -139,7 +139,7 @@ class CameraCalibration:
         distortion = []
         camera_matrix = []
         # if we have not setup the camera and distortion matrix, calibrate them here
-        if not request.existing:
+        if not request.existing_settings:
             rospy.loginfo("CAMERA CALIBRATION - Calibrating camera")
             # let's start calibrating
             # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
@@ -172,7 +172,7 @@ class CameraCalibration:
             ret, camera_matrix, distortion, rvecs, tvecs = cv.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
 
         # otherwise, use the matrices given and unpack them
-        elif request.existing:
+        else:
             rospy.loginfo("CAMERA CALIBRATION - Using given values")
             rospy.loginfo("CAMERA MAT: {0}".format(request.camera_matrix))
             rospy.loginfo("DISTORTION: {0}".format(request.distortion))
