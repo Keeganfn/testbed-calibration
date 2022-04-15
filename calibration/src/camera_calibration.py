@@ -224,7 +224,7 @@ class CameraCalibration:
             rospy.loginfo("CAMERA CALIBRATION - No aruco photo found !!")
         else:
             # Detect ArUco markers in the video frame
-            (corners, markerIDs, rejected) = cv.aruco.detectMarkers(self.aruco_photo, arucoDict, parameters=arucoParams,cameraMatrix=camera_matrix, distCoeff=distortion)
+            (corners, markerIDs, rejected) = cv.aruco.detectMarkers(self.aruco_photo, arucoDict, parameters=arucoParams)
 
             # Check that at least one ArUco marker was detected
             if markerIDs is not None and len(markerIDs) == 4:
@@ -233,7 +233,7 @@ class CameraCalibration:
 
 
                 # Get the rotation and translation vectors
-                rvecs, tvecs, objPoints = cv.aruco.estimatePoseSingleMarkers(
+                rvecs, tvecs = cv.aruco.estimatePoseSingleMarkers(
                     corners,
                     arucoSideLength,
                     camera_matrix,
