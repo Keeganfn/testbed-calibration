@@ -135,6 +135,8 @@ class ArmCalibration:
         newMatrix[1][-1] = oldMatrix[1][-1] - dy
         newMatrix[2][-1] = oldMatrix[2][-1] - dz
 
+        inverse_matrix = np.linalg.inv(newMatrix)
+
         return newMatrix
 
         #print(dx, dy, dz)
@@ -155,9 +157,6 @@ class ArmCalibration:
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 
                 return False
-
-    
-
 
 
     def record_touchpoint_srv_callback(self, request):
