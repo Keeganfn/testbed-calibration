@@ -111,6 +111,8 @@ class CameraCalibration:
         if request.existing_settings:
             distortion = request.distortion
             camera_matrix = request.camera_matrix
+            camera_matrix = np.array([ [camera_matrix[1],camera_matrix[2],camera_matrix[3]], [camera_matrix[4],camera_matrix[5],camera_matrix[6]], [camera_matrix[7],camera_matrix[8],camera_matrix[9]] ])
+            distortion = np.array([distortion[1],distortion[2],distortion[3],distortion[4],distortion[5]])
             camera_matrix_step = request.camera_matrix_step
             height = self.calibrate_height(request, distortion, camera_matrix)
             transform_matrix = self.calibrate_arucos(request, distortion, camera_matrix, height)
@@ -205,9 +207,9 @@ class CameraCalibration:
 
                 rospy.loginfo("CAMERA CALIBRATION - Found Translation Vector: {0}".format(tvec))
                 rospy.loginfo("CAMERA CALIBRATION - Found Rotation Vector: {0}".format(rvec))
-                rospy.loginfo("CAMERA CALIBRATION - New Height Value: {0}".format(tvec[2][0]))
+                rospy.loginfo("CAMERA CALIBRATION - New Height Value: {0}".format(tvec[2][0] * 0.0254)) # convert from inches to m
 
-                height = tvec[2][0]
+                height = tvec[2][0] * 0.0254
             else:
                 rospy.loginfo("CAMERA CALIBRATION - Couldn't find chessboard for height calculation !!")
         return height
