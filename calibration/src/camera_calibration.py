@@ -15,8 +15,8 @@ from calibration.srv import CameraCalibrationSRV, CameraCalibrationSRVResponse
 
 
 # Constants defined
-boardX = 7 # how many squares are on the checkerboard in the x direction
-boardY = 9 # how many squares are on the checkerboard in the y direction
+boardX = 9 # how many squares are on the checkerboard in the x direction
+boardY = 6 # how many squares are on the checkerboard in the y direction
 criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001) # termination criteria
 arucoSideLength = 0.036 # 3.6 cm is the size of our arucos
 arucoDictName = "DICT_5X5_1000" # dictionary name we're using, switch to user input at some point?
