@@ -113,16 +113,16 @@ class CameraCalibration:
             distortion = request.distortion
             camera_matrix = request.camera_matrix
             camera_matrix_step = request.camera_matrix_step
-            height = calibrate_height(self, request, distortion, camera_matrix)
-            transform_matrix = calibrate_arucos(self, request, distortion, camera_matrix, height)
+            height = self.calibrate_height(self, request, distortion, camera_matrix)
+            transform_matrix = self.calibrate_arucos(self, request, distortion, camera_matrix, height)
             transform_matrix = transform_matrix.flatten()
         else:
             # get distortion and camera matrix from internal camera calibration
-            distortion, camera_matrix = calibrate_internal(self, request)
+            distortion, camera_matrix = self.calibrate_internal(self, request)
             # time to calibrate table, first we need to find Z distance (height).
-            height = calibrate_height(self, request, distortion, camera_matrix)
+            height = self.calibrate_height(self, request, distortion, camera_matrix)
             # time for the ArUcos, used to calculate transformation matrix to the center of the table
-            transform_matrix = calibrate_arucos(self, request, distortion, camera_matrix, height)
+            transform_matrix = self.calibrate_arucos(self, request, distortion, camera_matrix, height)
             # flatten any 2d matrices cause ros is dumb
             camera_matrix = camera_matrix.flatten()
             transform_matrix = transform_matrix.flatten()
@@ -306,7 +306,7 @@ class CameraCalibration:
                 rospy.loginfo("CAMERA CALIBRATION - Camera-to-Table Translation Vector: {0}".format(center_translation))
 
                 # combine into 4x4 tranformation matrix (Camera-to-Table)
-                transform_matrix = combine(center_rotation, center_translation)
+                transform_matrix = self.combine(center_rotation, center_translation)
                 rospy.loginfo("CAMERA CALIBRATION - Table-to-Camera Transform Matrix: {0}".format(transform_matrix))
 
                 # invert information before we combine into transform matrix
