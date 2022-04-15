@@ -89,7 +89,7 @@ class CameraCalibration:
                 image = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
             except CvBridgeError, e:
                 rospy.logwarn('CAMERA CALIBRATION - CV Bridge error: {0}'.format(e))
-            image = cv2.Canny(image, 100, 200)
+            image = cv.Canny(image, 100, 200)
             # now that we have opencv image, check if this should be added to camera calibration list (we haven't taken 30 photos yet)
             if len(self.camera_photos) < 30:
                 self.camera_photos.append(image)
