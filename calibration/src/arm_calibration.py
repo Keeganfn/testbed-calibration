@@ -62,8 +62,8 @@ class ArmCalibration:
         #DO CALCULATIONS HERE
 
         #should return these variables, step represents the dimension of the matrix (2d not supported), ie step=3 is a 3x3
-        transform_matrix_step = 3
-        transform_matrix = [1,2,3,1,2,3,1,2,3]
+        transform_matrix_step = 4
+        transform_matrix = [1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4]
         return ArmCalibrationSRVResponse(transform_matrix_step, transform_matrix)
 
     

@@ -48,13 +48,16 @@ class CameraCalibration:
 
     def camera_calibration_srv_callback(self, request):
         #takes in height as an optional argument, will be -1 if none given
-        rospy.loginfo("HEIGHT IS: {0}".format(request.height))
+        rospy.loginfo("EXISTING SETTINGS IS: {0}".format(request.existing_settings))
+        rospy.loginfo("DISTORTION IS: {0}".format(request.distortion))
+        rospy.loginfo("CAMERA MATRIX IS: {0}".format(request.camera_matrix))
+        rospy.loginfo("CAMERA MATRIX STEP IS: {0}".format(request.camera_matrix_step))
         #should return these variables, step represents the dimension of the matrix (2d not supported), ie step=3 is a 3x3
         distortion = [1,2,3,4,5]
         camera_matrix = [1,2,3,1,2,3,1,2,3]
         camera_matrix_step = 3
-        transform_matrix = [1,2,3,1,2,3,1,2,3]
-        transform_matrix_step = 3
+        transform_matrix = [1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4]
+        transform_matrix_step = 4
         return CameraCalibrationSRVResponse(distortion, camera_matrix_step, camera_matrix, transform_matrix_step, transform_matrix)
 
 if __name__ == "__main__":

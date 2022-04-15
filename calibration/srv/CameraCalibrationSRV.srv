@@ -1,5 +1,8 @@
 #input
-float64 height
+bool existing_settings
+float64[] distortion
+int64 camera_matrix_step
+float64[] camera_matrix
 ---
 #output
 float64[] distortion

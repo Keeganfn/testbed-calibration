@@ -14,6 +14,7 @@ from std_srvs.srv import Trigger, TriggerResponse
 from calibration.srv import CameraCalibrationSRV, CameraCalibrationSRVResponse, CameraCalibrationSRVRequest
 from calibration.srv import ArmCalibrationSRV, ArmCalibrationSRVResponse, ArmCalibrationSRVRequest
 from calibration.srv import ArmRecordPointSRV, ArmRecordPointSRVResponse, ArmRecordPointSRVRequest
+from calibration.srv import DisplayResultSRV, DisplayResultSRVResponse, DisplayResultSRVRequest
 
 import csv
 
@@ -39,8 +40,11 @@ class CalibrationGUI(Plugin):
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
         context.add_widget(self._widget)
 
+        #NEED TO HAVE MORE ELEGANT WAIT, CRASHES RVIZ
         rospy.wait_for_service("take_picture_srv")
         self.take_picture_client = rospy.ServiceProxy("take_picture_srv", Trigger)
+        rospy.wait_for_service("display_result_srv")
+        self.display_result_client = rospy.ServiceProxy("display_result_srv", DisplayResultSRV)
         rospy.wait_for_service("camera_calibration_srv")
         self.camera_calibration_client = rospy.ServiceProxy("camera_calibration_srv", CameraCalibrationSRV)
         rospy.wait_for_service("arm_calibration_srv")
@@ -376,9 +380,9 @@ class CalibrationGUI(Plugin):
         # Set label content
         print("calibrating camera pose")
         response = CameraCalibrationSRVResponse()
-        response = self.camera_calibration_client(self.z_dist)
+        response = self.camera_calibration_client(self.is_camera_calibration_imported, self.camera_distortion, 
+                                                  self.camera_matrix, self.camera_matrix_step)
         rospy.loginfo("FOUND {0} {1} {2}".format(response.distortion, response.camera_matrix, response.transform_matrix))
-
         self.camera_distortion = response.distortion
         self.camera_matrix = response.camera_matrix
         self.camera_matrix_step = response.camera_matrix_step
@@ -492,8 +496,10 @@ class CalibrationGUI(Plugin):
         response = ArmCalibrationSRV()
         response = self.arm_calibration_client(self.arm_initial_guess[0], self.arm_initial_guess[1], self.arm_initial_guess[2])
         rospy.loginfo("FOUND: {0}".format(response.transform_matrix))
-
         self.arm_transform_matrix = response.transform_matrix
+        response = DisplayResultSRV()
+        response = self.display_result_client(self.arm_transform_matrix, self.camera_transform_matrix)
+        rospy.loginfo("FOUND: {0}".format(response.success))
 
         print(self.camera_matrix)
         print(self.camera_transform_matrix)
