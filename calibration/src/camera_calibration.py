@@ -129,7 +129,6 @@ class CameraCalibration:
         rospy.loginfo("CAMERA CALIBRATION - Final distortion: {0}".format(distortion))
         rospy.loginfo("CAMERA CALIBRATION - Final camera matrix: {0}".format(camera_matrix))
         rospy.loginfo("CAMERA CALIBRATION - Final transformation matrix: {0}".format(transform_matrix))
-
         return CameraCalibrationSRVResponse(distortion, camera_matrix_step, camera_matrix, transform_matrix_step, transform_matrix)
 
 

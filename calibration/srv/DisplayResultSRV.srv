@@ -1,0 +1,6 @@
+#input
+float64[] arm_to_testbed
+float64[] testbed_to_camera
+---
+#output
+bool success
