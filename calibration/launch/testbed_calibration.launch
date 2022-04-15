@@ -19,4 +19,9 @@
         output="screen">
     </node>
 
+    <node pkg="calibration"
+        name="visualization"
+        type="visualization.py"
+        output="screen">
+    </node>
 </launch>

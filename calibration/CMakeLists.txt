@@ -63,6 +63,7 @@ add_service_files(
    CameraCalibrationSRV.srv
    ArmCalibrationSRV.srv
    ArmRecordPointSRV.srv
+   DisplayResultSRV.srv
 )
 
 ## Generate actions in the 'action' folder
