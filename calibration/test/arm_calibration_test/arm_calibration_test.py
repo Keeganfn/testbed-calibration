@@ -1,6 +1,8 @@
 #! usr/bin/env python
+
 import sys
 import json
+import numpy as np
 
 sys.path.append('../../src/')
 from arm_calibration import ArmCalibration 
@@ -13,7 +15,7 @@ def get_mock_trans_matrx():
     for i in range(4):
         with open('./mock_transforms/tp' + str(i) + ".json") as mock:
             data[i] = json.load(mock)
-    
+
     return data
 
 # Call the calibrate_arm() function using the mock data
@@ -22,7 +24,7 @@ def test_calibrate_arm():
     mock_data = get_mock_trans_matrx()
     result = calib.calibrate_arm(mock_data)
 
-    #print(result)
+    print(result)
 
 
 if __name__ == '__main__':
