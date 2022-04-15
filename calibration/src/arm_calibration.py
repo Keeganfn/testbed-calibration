@@ -156,9 +156,6 @@ class ArmCalibration:
                 
                 return False
 
-    
-
-
 
     def record_touchpoint_srv_callback(self, request):
         #request contains the touchpoint location the arm is at
