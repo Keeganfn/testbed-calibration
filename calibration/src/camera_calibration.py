@@ -113,16 +113,16 @@ class CameraCalibration:
             distortion = request.distortion
             camera_matrix = request.camera_matrix
             camera_matrix_step = request.camera_matrix_step
-            height = self.calibrate_height(self, request, distortion, camera_matrix)
-            transform_matrix = self.calibrate_arucos(self, request, distortion, camera_matrix, height)
+            height = self.calibrate_height(request, distortion, camera_matrix)
+            transform_matrix = self.calibrate_arucos(request, distortion, camera_matrix, height)
             transform_matrix = transform_matrix.flatten()
         else:
             # get distortion and camera matrix from internal camera calibration
-            distortion, camera_matrix = self.calibrate_internal(self, request)
+            distortion, camera_matrix = self.calibrate_internal(request)
             # time to calibrate table, first we need to find Z distance (height).
-            height = self.calibrate_height(self, request, distortion, camera_matrix)
+            height = self.calibrate_height(request, distortion, camera_matrix)
             # time for the ArUcos, used to calculate transformation matrix to the center of the table
-            transform_matrix = self.calibrate_arucos(self, request, distortion, camera_matrix, height)
+            transform_matrix = self.calibrate_arucos(request, distortion, camera_matrix, height)
             # flatten any 2d matrices cause ros is dumb
             camera_matrix = camera_matrix.flatten()
             transform_matrix = transform_matrix.flatten()
@@ -139,7 +139,7 @@ class CameraCalibration:
         distortion = []
         camera_matrix = []
         # if we have not setup the camera and distortion matrix, calibrate them here
-        if not request.existing:
+        if not request.existing_settings:
             rospy.loginfo("CAMERA CALIBRATION - Calibrating camera")
             # let's start calibrating
             # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
@@ -172,7 +172,7 @@ class CameraCalibration:
             ret, camera_matrix, distortion, rvecs, tvecs = cv.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
 
         # otherwise, use the matrices given and unpack them
-        elif request.existing:
+        else:
             rospy.loginfo("CAMERA CALIBRATION - Using given values")
             rospy.loginfo("CAMERA MAT: {0}".format(request.camera_matrix))
             rospy.loginfo("DISTORTION: {0}".format(request.distortion))
@@ -321,7 +321,7 @@ class CameraCalibration:
         return transform_matrix
 
 
-    def combine(rotation, tvec):
+    def combine(self, rotation, tvec):
         combine = np.array([[0, 0, 0, 0],
                             [0, 0, 0, 0],
                             [0, 0, 0, 0],
