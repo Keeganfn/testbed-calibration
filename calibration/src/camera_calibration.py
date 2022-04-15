@@ -108,22 +108,24 @@ class CameraCalibration:
         camera_matrix_step = 3
         transform_matrix_step = 4
         height = 0
-        #takes in height as an optional argument, will be -1 if none given
-        rospy.loginfo("CAMERA CALIBRATION - HEIGHT IS: {0}".format(request.height))
-        rospy.loginfo("CAMERA CALIBRATION - MATRICES GIVEN? {0}".format(request.existing))
 
-        # get distortion and camera matrix from internal camera calibration
-        distortion, camera_matrix = calibrate_internal(self, request)
-
-        # time to calibrate table, first we need to find Z distance (height).
-        height = calibrate_height(self, request, distortion, camera_matrix)
-
-        # time for the ArUcos, used to calculate transformation matrix to the center of the table
-        transform_matrix = calibrate_arucos(self, request, distortion, camera_matrix, height)
-
-        # flatten any 2d matrices cause ros is dumb
-        camera_matrix = camera_matrix.flatten()
-        transform_matrix = transform_matrix.flatten()
+        if request.existing_settings:
+            distortion = request.distortion
+            camera_matrix = request.camera_matrix
+            camera_matrix_step = request.camera_matrix_step
+            height = calibrate_height(self, request, distortion, camera_matrix)
+            transform_matrix = calibrate_arucos(self, request, distortion, camera_matrix, height)
+            transform_matrix = transform_matrix.flatten()
+        else:
+            # get distortion and camera matrix from internal camera calibration
+            distortion, camera_matrix = calibrate_internal(self, request)
+            # time to calibrate table, first we need to find Z distance (height).
+            height = calibrate_height(self, request, distortion, camera_matrix)
+            # time for the ArUcos, used to calculate transformation matrix to the center of the table
+            transform_matrix = calibrate_arucos(self, request, distortion, camera_matrix, height)
+            # flatten any 2d matrices cause ros is dumb
+            camera_matrix = camera_matrix.flatten()
+            transform_matrix = transform_matrix.flatten()
 
         # print final values
         rospy.loginfo("CAMERA CALIBRATION - Final distortion: {0}".format(distortion))
