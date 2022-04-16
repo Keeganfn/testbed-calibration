@@ -15,8 +15,8 @@ from calibration.srv import CameraCalibrationSRV, CameraCalibrationSRVResponse
 
 
 # Constants defined
-boardX = 7 # how many squares are on the checkerboard in the x direction
-boardY = 9 # how many squares are on the checkerboard in the y direction
+boardX = 9 # how many squares are on the checkerboard in the x direction
+boardY = 6 # how many squares are on the checkerboard in the y direction
 criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001) # termination criteria
 arucoSideLength = 0.036 # 3.6 cm is the size of our arucos
 arucoDictName = "DICT_5X5_1000" # dictionary name we're using, switch to user input at some point?
@@ -89,7 +89,6 @@ class CameraCalibration:
                 image = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
             except CvBridgeError, e:
                 rospy.logwarn('CAMERA CALIBRATION - CV Bridge error: {0}'.format(e))
-            image = cv2.Canny(image, 100, 200)
             # now that we have opencv image, check if this should be added to camera calibration list (we haven't taken 30 photos yet)
             if len(self.camera_photos) < 30:
                 self.camera_photos.append(image)
@@ -112,17 +111,19 @@ class CameraCalibration:
         if request.existing_settings:
             distortion = request.distortion
             camera_matrix = request.camera_matrix
+            camera_matrix = np.array([ [camera_matrix[1],camera_matrix[2],camera_matrix[3]], [camera_matrix[4],camera_matrix[5],camera_matrix[6]], [camera_matrix[7],camera_matrix[8],camera_matrix[9]] ])
+            distortion = np.array([distortion[1],distortion[2],distortion[3],distortion[4],distortion[5]])
             camera_matrix_step = request.camera_matrix_step
-            height = calibrate_height(self, request, distortion, camera_matrix)
-            transform_matrix = calibrate_arucos(self, request, distortion, camera_matrix, height)
+            height = self.calibrate_height(request, distortion, camera_matrix)
+            transform_matrix = self.calibrate_arucos(request, distortion, camera_matrix, height)
             transform_matrix = transform_matrix.flatten()
         else:
             # get distortion and camera matrix from internal camera calibration
-            distortion, camera_matrix = calibrate_internal(self, request)
+            distortion, camera_matrix = self.calibrate_internal(request)
             # time to calibrate table, first we need to find Z distance (height).
-            height = calibrate_height(self, request, distortion, camera_matrix)
+            height = self.calibrate_height(request, distortion, camera_matrix)
             # time for the ArUcos, used to calculate transformation matrix to the center of the table
-            transform_matrix = calibrate_arucos(self, request, distortion, camera_matrix, height)
+            transform_matrix = self.calibrate_arucos(request, distortion, camera_matrix, height)
             # flatten any 2d matrices cause ros is dumb
             camera_matrix = camera_matrix.flatten()
             transform_matrix = transform_matrix.flatten()
@@ -139,7 +140,7 @@ class CameraCalibration:
         distortion = []
         camera_matrix = []
         # if we have not setup the camera and distortion matrix, calibrate them here
-        if not request.existing:
+        if not request.existing_settings:
             rospy.loginfo("CAMERA CALIBRATION - Calibrating camera")
             # let's start calibrating
             # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
@@ -172,51 +173,45 @@ class CameraCalibration:
             ret, camera_matrix, distortion, rvecs, tvecs = cv.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
 
         # otherwise, use the matrices given and unpack them
-        elif request.existing:
+        else:
             rospy.loginfo("CAMERA CALIBRATION - Using given values")
-            rospy.loginfo("CAMERA MAT: {0}".format(request.camera_matrix))
-            rospy.loginfo("DISTORTION: {0}".format(request.distortion))
+
             camera_matrix = request.camera_matrix
             distortion = request.distortion
             camera_matrix = np.array([ [camera_matrix[1],camera_matrix[2],camera_matrix[3]], [camera_matrix[4],camera_matrix[5],camera_matrix[6]], [camera_matrix[7],camera_matrix[8],camera_matrix[9]] ])
             distortion = np.array([distortion[1],distortion[2],distortion[3],distortion[4],distortion[5]])
 
+        rospy.loginfo("CAMERA MAT: {0}".format(request.camera_matrix))
+        rospy.loginfo("DISTORTION: {0}".format(request.distortion))
         return distortion, camera_matrix
 
 
 
     def calibrate_height(self, request, distortion, camera_matrix):
-        height = -1
-        # if we have not been given height (height == -1) use the photo to read the checkerboard to find height
-        if request.height == -1:
-            rospy.loginfo("CAMERA CALIBRATION - Calculating height with chessboard")
-            if self.aruco_photo is None:
-                rospy.loginfo("CAMERA CALIBRATION - No aruco photo found !!")
-            else:
-                gray = cv.cvtColor(self.aruco_photo, cv.COLOR_BGR2GRAY)
-                ret, corners = cv.findChessboardCorners(gray, (boardY,boardX), None)
-
-                if ret == True:
-                    rospy.loginfo("CAMERA CALIBRATION - Checkerboard found on table")
-                    objp = np.zeros((boardX*boardY,3), np.float32)
-                    objp[:,:2] = np.mgrid[0:boardY,0:boardX].T.reshape(-1,2)
-                    corners2 = cv.cornerSubPix(gray,corners,(11,11),(-1,-1),criteria)
-
-                    # Find the rotation and translation vectors.
-                    _, rvec, tvec, inliers = cv.solvePnPRansac(objp, corners2, camera_matrix, distortion)
-
-                    rospy.loginfo("CAMERA CALIBRATION - Found Translation Vector: {0}".format(tvec))
-                    rospy.loginfo("CAMERA CALIBRATION - Found Rotation Vector: {0}".format(rvec))
-                    rospy.loginfo("CAMERA CALIBRATION - New Height Value: {0}".format(tvec[2][0]))
-
-                    height = tvec[2][0]
-                else:
-                    rospy.loginfo("CAMERA CALIBRATION - Couldn't find chessboard for height calculation !!")
-
-        # otherwise, use height given to use
+        height = 0
+        rospy.loginfo("CAMERA CALIBRATION - Calculating height with chessboard")
+        if self.aruco_photo is None:
+            rospy.loginfo("CAMERA CALIBRATION - No aruco photo found !!")
         else:
-            rospy.loginfo("CAMERA CALIBRATION - Using given height")
-            height = request.height
+            gray = cv.cvtColor(self.aruco_photo, cv.COLOR_BGR2GRAY)
+            ret, corners = cv.findChessboardCorners(gray, (boardY,boardX), None)
+
+            if ret == True:
+                rospy.loginfo("CAMERA CALIBRATION - Checkerboard found on table")
+                objp = np.zeros((boardX*boardY,3), np.float32)
+                objp[:,:2] = np.mgrid[0:boardY,0:boardX].T.reshape(-1,2)
+                corners2 = cv.cornerSubPix(gray,corners,(11,11),(-1,-1),criteria)
+
+                # Find the rotation and translation vectors.
+                _, rvec, tvec, inliers = cv.solvePnPRansac(objp, corners2, camera_matrix, distortion)
+
+                rospy.loginfo("CAMERA CALIBRATION - Found Translation Vector: {0}".format(tvec))
+                rospy.loginfo("CAMERA CALIBRATION - Found Rotation Vector: {0}".format(rvec))
+                rospy.loginfo("CAMERA CALIBRATION - New Height Value: {0}".format(tvec[2][0] * 0.0254)) # convert from inches to m
+
+                height = tvec[2][0] * 0.0254
+            else:
+                rospy.loginfo("CAMERA CALIBRATION - Couldn't find chessboard for height calculation !!")
         return height
 
 
@@ -231,7 +226,7 @@ class CameraCalibration:
             rospy.loginfo("CAMERA CALIBRATION - No aruco photo found !!")
         else:
             # Detect ArUco markers in the video frame
-            (corners, markerIDs, rejected) = cv.aruco.detectMarkers(self.aruco_photo, arucoDict, parameters=arucoParams,cameraMatrix=camera_matrix, distCoeff=distortion)
+            (corners, markerIDs, rejected) = cv.aruco.detectMarkers(self.aruco_photo, arucoDict, parameters=arucoParams)
 
             # Check that at least one ArUco marker was detected
             if markerIDs is not None and len(markerIDs) == 4:
@@ -240,7 +235,7 @@ class CameraCalibration:
 
 
                 # Get the rotation and translation vectors
-                rvecs, tvecs, objPoints = cv.aruco.estimatePoseSingleMarkers(
+                rvecs, tvecs = cv.aruco.estimatePoseSingleMarkers(
                     corners,
                     arucoSideLength,
                     camera_matrix,
@@ -306,7 +301,7 @@ class CameraCalibration:
                 rospy.loginfo("CAMERA CALIBRATION - Camera-to-Table Translation Vector: {0}".format(center_translation))
 
                 # combine into 4x4 tranformation matrix (Camera-to-Table)
-                transform_matrix = combine(center_rotation, center_translation)
+                transform_matrix = self.combine(center_rotation, center_translation)
                 rospy.loginfo("CAMERA CALIBRATION - Table-to-Camera Transform Matrix: {0}".format(transform_matrix))
 
                 # invert information before we combine into transform matrix
@@ -321,7 +316,7 @@ class CameraCalibration:
         return transform_matrix
 
 
-    def combine(rotation, tvec):
+    def combine(self, rotation, tvec):
         combine = np.array([[0, 0, 0, 0],
                             [0, 0, 0, 0],
                             [0, 0, 0, 0],

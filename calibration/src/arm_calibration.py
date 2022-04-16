@@ -49,10 +49,16 @@ class ArmCalibration:
         [0, 0, 1, z],
         [0, 0, 0, 1]])
 
+        print("initial guess matrix:")
+        print(estOriginToBase)
+
         arr_translations = self.__getTranslations(estOriginToBase, tp_data)
         
         newMatrix = self.__updateTransMatrix(arr_translations, estOriginToBase)
         
+        print("Final Matrix (After inverse):")
+        print(newMatrix)
+
         # returns the transform matrix flattened to 1D array
         return np.array.flatten(newMatrix)
 
@@ -100,6 +106,7 @@ class ArmCalibration:
     # Calibrates the rotation portion of the transformation matrix.
     def __calibrateRotations(self, arr_translations):
 
+        print("arr_translations[0][:-1] = ")
         print(arr_translations[0][:-1])
         v_12 = arr_translations[1][:-1] - arr_translations[2][:-1]
         v_43 = arr_translations[0][:-1] - arr_translations[3][:-1]
@@ -120,12 +127,17 @@ class ArmCalibration:
         rotationMatrix[1][:-1] = yp_vec / np.linalg.norm(yp_vec)
         rotationMatrix[2][:-1] = z_vec / np.linalg.norm(z_vec)
 
+        print("Rotation Matrix: ")
+        print(rotationMatrix)
 
         return rotationMatrix
 
 
     # Calibrates the original guess transformation matrix and returns the updated matrix.
     def __updateTransMatrix(self, arr_translations, oldMatrix):
+
+        print("Before Calibrating Translation Portion: ")
+        print(arr_translations)
 
         (dx, dy, dz) = self.__calibrateTranslations(arr_translations)
 
@@ -134,6 +146,11 @@ class ArmCalibration:
         newMatrix[0][-1] = oldMatrix[0][-1] - dx
         newMatrix[1][-1] = oldMatrix[1][-1] - dy
         newMatrix[2][-1] = oldMatrix[2][-1] - dz
+
+        print("Calibrated Matrix before Inverse:")
+        print(newMatrix)
+
+        inverse_matrix = np.linalg.inv(newMatrix)
 
         return newMatrix
 
@@ -150,14 +167,14 @@ class ArmCalibration:
                 transform_mat = listener.fromTranslationRotation(translation, rotation)
 
                 self.tp_data[id] = transform_mat
+                print("Touchpoint #" + str(id) + "recorded successfully:")
+                print(transform_mat)
+
                 return True
 
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 
                 return False
-
-    
-
 
 
     def record_touchpoint_srv_callback(self, request):
@@ -166,6 +183,9 @@ class ArmCalibration:
 
         #call record touchpoint function, save result to data structure, update success and return
         success = self.__recordTouchpoint(request.location)
+
+        print("TouchPoint Recorded Successfully? " + str(success))
+
         rospy.loginfo("RECORDED POINT")
 
         return ArmRecordPointSRVResponse(success)
@@ -182,7 +202,7 @@ class ArmCalibration:
         #should return these variables, step represents the dimension of the matrix (2d not supported), ie step=3 is a 3x3
         transform_matrix_step = 4
 
-        transform_matrix = [1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4]
+        #transform_matrix = [1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4]
         return ArmCalibrationSRVResponse(transform_matrix_step, transform_matrix)
 
 
