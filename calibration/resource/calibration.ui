@@ -790,7 +790,7 @@
             </size>
            </property>
            <property name="maximum">
-            <number>31</number>
+            <number>30</number>
            </property>
            <property name="value">
             <number>0</number>
@@ -820,7 +820,7 @@
               </sizepolicy>
              </property>
              <property name="text">
-              <string>0/31 Pictures</string>
+              <string>0/30 Pictures</string>
              </property>
             </widget>
            </item>
