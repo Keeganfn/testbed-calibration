@@ -17,6 +17,7 @@ from calibration.srv import ArmRecordPointSRV, ArmRecordPointSRVResponse, ArmRec
 from calibration.srv import DisplayResultSRV, DisplayResultSRVResponse, DisplayResultSRVRequest
 
 import csv
+from ast import literal_eval
 
 class CalibrationGUI(Plugin):
 
@@ -136,7 +137,7 @@ class CalibrationGUI(Plugin):
 
         self.csv_camera_header = ["testbed_selected", "arm_selected", "camera_selected", 
                              "camera_distortion", "camera_matrix_step", "camera_matrix",
-                             "camera_transform_matrix_step", "camera_transform_matrix"] 
+                             ] 
 
         # Testing adding in row to camera table
         self.insert_camera_to_table(["Camera 1", "No"])
@@ -183,11 +184,9 @@ class CalibrationGUI(Plugin):
             self.testbed_selected = csv_arr[1][0]
             self.arm_selected = csv_arr[1][1]
             self.camera_selected = csv_arr[1][2]
-            self.camera_distortion = csv_arr[1][3]
-            self.camera_matrix_step = csv_arr[1][4]
-            self.camera_matrix = csv_arr[1][5]
-            self.camera_transform_matrix_step = csv_arr[1][6]
-            self.camera_transform_matrix = csv_arr[1][7]
+            self.camera_distortion = literal_eval(csv_arr[1][3])
+            self.camera_matrix_step = literal_eval(csv_arr[1][4])
+            self.camera_matrix = literal_eval(csv_arr[1][5])
 
     def read_calibration_csv(self, filename):
         with open(filename, "r") as f:
@@ -204,13 +203,13 @@ class CalibrationGUI(Plugin):
             self.testbed_selected = csv_arr[1][0]
             self.arm_selected = csv_arr[1][1]
             self.camera_selected = csv_arr[1][2]
-            self.camera_distortion = csv_arr[1][3]
-            self.camera_matrix_step = csv_arr[1][4]
-            self.camera_matrix = csv_arr[1][5]
-            self.camera_transform_matrix_step = csv_arr[1][6]
-            self.camera_transform_matrix = csv_arr[1][7]
-            self.arm_transform_matrix_step = csv_arr[1][8]
-            self.arm_transform_matrix = csv_arr[1][9]
+            self.camera_distortion = literal_eval(csv_arr[1][3])
+            self.camera_matrix_step = literal_eval(csv_arr[1][4])
+            self.camera_matrix = literal_eval(csv_arr[1][5])
+            self.camera_transform_matrix_step = literal_eval(csv_arr[1][6])
+            self.camera_transform_matrix = literal_eval(csv_arr[1][7])
+            self.arm_transform_matrix_step = literal_eval(csv_arr[1][8])
+            self.arm_transform_matrix = literal_eval(csv_arr[1][9])
 
     def save_calibration_to_csv(self, filename):
         filename = filename + ".csv"
@@ -229,7 +228,7 @@ class CalibrationGUI(Plugin):
             csv_writer.writerow(self.csv_camera_header)
             csv_writer.writerow([self.testbed_selected, self.arm_selected, self.camera_selected, 
                                  self.camera_distortion, self.camera_matrix_step, self.camera_matrix,
-                                 self.camera_transform_matrix_step, self.camera_transform_matrix])
+                                 ])
 
     # Adding cameras into the table
     def insert_camera_to_table(self, row_list):
@@ -249,7 +248,7 @@ class CalibrationGUI(Plugin):
 
         self._widget.pictureButton.setEnabled(self.is_camera_selected and (not self.is_camera_calibration_imported) and (not self.is_internal_camera_calibrated) and (not self.is_import_calib_clicked))
 
-        camera_pose_enabled = self.is_internal_camera_calibrated and (not self.is_camera_calibration_imported) and (not self.is_mark_complete) and (not self.is_import_calib_clicked)
+        camera_pose_enabled = self.is_internal_camera_calibrated and (not self.is_mark_complete) and (not self.is_import_calib_clicked)
         self._widget.cameraPoseButton.setEnabled(camera_pose_enabled)
         self._widget.zDistSpinBox.setEnabled(camera_pose_enabled and self.is_camera_pose_calibrated)
         self._widget.markCompleteButton.setEnabled(camera_pose_enabled and self.is_camera_pose_calibrated)
@@ -318,8 +317,6 @@ class CalibrationGUI(Plugin):
                 self.read_camera_calibration_csv(filename)
                 self.is_camera_calibration_imported = True
                 self.is_internal_camera_calibrated = True
-                self.is_camera_pose_calibrated = True
-                self.is_mark_complete = True
 
         except Exception as ex:
             self.create_error_dialog("Failed to import " + filename + ". Check the file format." + str(ex))
@@ -331,8 +328,6 @@ class CalibrationGUI(Plugin):
             self.camera_distortion = None
             self.camera_matrix_step = None
             self.camera_matrix = None
-            self.camera_transform_matrix_step = None
-            self.camera_transform_matrix = None
 
             self.is_testbed_selected = False
             self.is_arm_selected = False
@@ -379,9 +374,13 @@ class CalibrationGUI(Plugin):
     def handle_calibrate_camera_pose_clicked(self):
         # Set label content
         print("calibrating camera pose")
+        response = TriggerResponse()
+        response = self.take_picture_client()
+        rospy.loginfo("PICTURE TAKEN: {0}".format(response.success))
+        
         response = CameraCalibrationSRVResponse()
         response = self.camera_calibration_client(self.is_camera_calibration_imported, self.camera_distortion, 
-                                                  self.camera_matrix, self.camera_matrix_step)
+                                                  self.camera_matrix_step, self.camera_matrix)
         rospy.loginfo("FOUND {0} {1} {2}".format(response.distortion, response.camera_matrix, response.transform_matrix))
         self.camera_distortion = response.distortion
         self.camera_matrix = response.camera_matrix
