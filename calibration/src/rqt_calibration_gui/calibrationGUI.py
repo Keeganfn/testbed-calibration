@@ -145,6 +145,15 @@ class CalibrationGUI(Plugin):
 
         # Testing adding in row to camera table
         self.insert_camera_to_table(["Camera 1", "No"])
+    
+    def log_all_info(self):
+        rospy.loginfo("GUI - camera_matrix: {0}".format(self.camera_matrix))
+        rospy.loginfo("GUI - camera_matrix_step: {0}".format(self.camera_matrix_step))
+        rospy.loginfo("GUI - camera_distortion: {0}".format(self.camera_distortion))
+        rospy.loginfo("GUI - camera_transform_matrix: {0}".format(self.camera_transform_matrix))
+        rospy.loginfo("GUI - camera_transform_matrix_step: {0}".format(self.camera_transform_matrix_step))
+        rospy.loginfo("GUI - arm_transform_matrix: {0}".format(self.arm_transform_matrix))
+        rospy.loginfo("GUI - arm_transform_matrix_step: {0}".format(self.arm_transform_matrix_step))
 
     # Updating z dist manually
     def update_z_dist_in_camera_matrices(self, new_z):
@@ -192,6 +201,9 @@ class CalibrationGUI(Plugin):
             self.camera_matrix_step = literal_eval(csv_arr[1][4])
             self.camera_matrix = literal_eval(csv_arr[1][5])
 
+        self.log_all_info()
+
+
     def read_calibration_csv(self, filename):
         with open(filename, "r") as f:
             csv_reader = csv.reader(f, delimiter = ",", lineterminator="\n")
@@ -215,6 +227,8 @@ class CalibrationGUI(Plugin):
             self.arm_transform_matrix_step = literal_eval(csv_arr[1][8])
             self.arm_transform_matrix = literal_eval(csv_arr[1][9])
 
+        self.log_all_info()
+
     def save_calibration_to_csv(self, filename):
         filename = filename + ".csv"
         with open(filename,"w") as f:
@@ -225,6 +239,8 @@ class CalibrationGUI(Plugin):
                                  self.camera_transform_matrix_step, self.camera_transform_matrix, 
                                  self.arm_transform_matrix_step, self.arm_transform_matrix])
 
+        self.log_all_info()
+
     def save_camera_calibration_to_csv(self, filename):
         filename = filename + ".csv"
         with open(filename,"w") as f:
@@ -233,6 +249,8 @@ class CalibrationGUI(Plugin):
             csv_writer.writerow([self.testbed_selected, self.arm_selected, self.camera_selected, 
                                  self.camera_distortion, self.camera_matrix_step, self.camera_matrix,
                                  ])
+
+        self.log_all_info()
 
     # Adding cameras into the table
     def insert_camera_to_table(self, row_list):
