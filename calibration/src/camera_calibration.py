@@ -111,12 +111,14 @@ class CameraCalibration:
         if request.existing_settings:
             distortion = request.distortion
             camera_matrix = request.camera_matrix
-            camera_matrix = np.array([ [camera_matrix[1],camera_matrix[2],camera_matrix[3]], [camera_matrix[4],camera_matrix[5],camera_matrix[6]], [camera_matrix[7],camera_matrix[8],camera_matrix[9]] ])
-            distortion = np.array([distortion[1],distortion[2],distortion[3],distortion[4],distortion[5]])
+            camera_matrix = np.array([ [camera_matrix[0],camera_matrix[1],camera_matrix[2]], [camera_matrix[3],camera_matrix[4],camera_matrix[5]], [camera_matrix[6],camera_matrix[7],camera_matrix[8]] ])
+            distortion = np.array([distortion[0],distortion[1],distortion[2],distortion[3],distortion[4]])
             camera_matrix_step = request.camera_matrix_step
             height = self.calibrate_height(request, distortion, camera_matrix)
             transform_matrix = self.calibrate_arucos(request, distortion, camera_matrix, height)
             transform_matrix = transform_matrix.flatten()
+            camera_matrix = camera_matrix.flatten()
+            distortion = distortion.flatten()
         else:
             # get distortion and camera matrix from internal camera calibration
             distortion, camera_matrix = self.calibrate_internal(request)
@@ -224,6 +226,7 @@ class CameraCalibration:
 
         if self.aruco_photo is None:
             rospy.loginfo("CAMERA CALIBRATION - No aruco photo found !!")
+            transform_matrix = np.array([])
         else:
             # Detect ArUco markers in the video frame
             (corners, markerIDs, rejected) = cv.aruco.detectMarkers(self.aruco_photo, arucoDict, parameters=arucoParams)
