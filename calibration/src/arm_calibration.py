@@ -3,6 +3,7 @@
 import rospy
 import sys
 import numpy as np
+import tf
 
 from calibration.srv import ArmCalibrationSRV, ArmCalibrationSRVResponse
 from calibration.srv import ArmRecordPointSRV, ArmRecordPointSRVResponse
