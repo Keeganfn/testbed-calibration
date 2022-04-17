@@ -95,6 +95,10 @@ class CalibrationGUI(Plugin):
         self._widget.ySpinBox.valueChanged.connect(self.handle_initial_guess_y_spinbox_change)
         self._widget.zSpinBox.valueChanged.connect(self.handle_initial_guess_z_spinbox_change)
 
+        self._widget.xSpinBox.setMinimum(-10000)
+        self._widget.ySpinBox.setMinimum(-10000)
+        self._widget.zSpinBox.setMinimum(-10000)
+
 
         # Table
         self._widget.camTable.itemClicked.connect(self.handle_cam_table_item_clicked)
