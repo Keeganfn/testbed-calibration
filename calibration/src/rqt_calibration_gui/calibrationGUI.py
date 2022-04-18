@@ -366,12 +366,12 @@ class CalibrationGUI(Plugin):
         rospy.loginfo("PICTURE TAKEN: {0}".format(response.success))
         
         #Update progress bar
-        if self.total_pictures < 30:
+        if self.total_pictures < 31:
             self.total_pictures+=1
-            self._widget.pictureProgressLabel.setText(str(self.total_pictures)+"/30")
+            self._widget.pictureProgressLabel.setText(str(self.total_pictures)+"/31")
             self._widget.progressBar.setValue(self.total_pictures)
 
-            if self.total_pictures == 30:
+            if self.total_pictures == 31:
                 self.is_internal_camera_calibrated = True
 
         self.update_enabled()
