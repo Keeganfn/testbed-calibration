@@ -111,8 +111,8 @@ class CameraCalibration:
         if request.existing_settings:
             distortion = request.distortion
             camera_matrix = request.camera_matrix
-            camera_matrix = np.array([ [camera_matrix[1],camera_matrix[2],camera_matrix[3]], [camera_matrix[4],camera_matrix[5],camera_matrix[6]], [camera_matrix[7],camera_matrix[8],camera_matrix[9]] ])
-            distortion = np.array([distortion[1],distortion[2],distortion[3],distortion[4],distortion[5]])
+            camera_matrix = np.array([ [camera_matrix[0],camera_matrix[1],camera_matrix[2]], [camera_matrix[3],camera_matrix[4],camera_matrix[5]], [camera_matrix[6],camera_matrix[7],camera_matrix[8]] ])
+            distortion = np.array([distortion[0],distortion[1],distortion[2],distortion[3],distortion[4]])
         else:
             # get distortion and camera matrix from internal camera calibration
             distortion, camera_matrix = self.calibrate_internal()
