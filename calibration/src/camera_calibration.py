@@ -113,22 +113,17 @@ class CameraCalibration:
             camera_matrix = request.camera_matrix
             camera_matrix = np.array([ [camera_matrix[0],camera_matrix[1],camera_matrix[2]], [camera_matrix[3],camera_matrix[4],camera_matrix[5]], [camera_matrix[6],camera_matrix[7],camera_matrix[8]] ])
             distortion = np.array([distortion[0],distortion[1],distortion[2],distortion[3],distortion[4]])
-            camera_matrix_step = request.camera_matrix_step
-            height = self.calibrate_height(request, distortion, camera_matrix)
-            transform_matrix = self.calibrate_arucos(request, distortion, camera_matrix, height)
-            transform_matrix = transform_matrix.flatten()
-            camera_matrix = camera_matrix.flatten()
-            distortion = distortion.flatten()
         else:
             # get distortion and camera matrix from internal camera calibration
-            distortion, camera_matrix = self.calibrate_internal(request)
-            # time to calibrate table, first we need to find Z distance (height).
-            height = self.calibrate_height(request, distortion, camera_matrix)
-            # time for the ArUcos, used to calculate transformation matrix to the center of the table
-            transform_matrix = self.calibrate_arucos(request, distortion, camera_matrix, height)
-            # flatten any 2d matrices cause ros is dumb
-            camera_matrix = camera_matrix.flatten()
-            transform_matrix = transform_matrix.flatten()
+            distortion, camera_matrix = self.calibrate_internal()
+        # time to calibrate table, first we need to find Z distance (height).
+        height = self.calibrate_height(distortion, camera_matrix)
+        # time for the ArUcos, used to calculate transformation matrix to the center of the table
+        transform_matrix = self.calibrate_arucos(distortion, camera_matrix, height)
+        # flatten any 2d matrices cause ros is dumb
+        camera_matrix = camera_matrix.flatten()
+        distortion = distortion.flatten()
+        transform_matrix = transform_matrix.flatten()
 
         # print final values
         rospy.loginfo("CAMERA CALIBRATION - Final distortion: {0}".format(distortion))
@@ -138,58 +133,48 @@ class CameraCalibration:
 
 
 
-    def calibrate_internal(self, request):
+    def calibrate_internal(self):
         distortion = []
         camera_matrix = []
         # if we have not setup the camera and distortion matrix, calibrate them here
-        if not request.existing_settings:
-            rospy.loginfo("CAMERA CALIBRATION - Calibrating camera")
-            # let's start calibrating
-            # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
-            objp = np.zeros((boardX*boardY,3), np.float32)
-            objp[:,:2] = np.mgrid[0:boardY,0:boardX].T.reshape(-1,2)
-            # Arrays to store object points and image points from all the images.
-            objpoints = [] # 3d point in real world space
-            imgpoints = [] # 2d points in image plane.
+        rospy.loginfo("CAMERA CALIBRATION - Calibrating camera")
+        # let's start calibrating
+        # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
+        objp = np.zeros((boardX*boardY,3), np.float32)
+        objp[:,:2] = np.mgrid[0:boardY,0:boardX].T.reshape(-1,2)
+        # Arrays to store object points and image points from all the images.
+        objpoints = [] # 3d point in real world space
+        imgpoints = [] # 2d points in image plane.
 
-            for img in self.camera_photos:
-                rospy.loginfo("CAMERA CALIBRATION - Image: {0}".format(img))
-                # get a grey scale version of the image
-                gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-                # Find the chess board corners
-                ret, corners = cv.findChessboardCorners(gray, (boardY,boardX), None)
-                # If found, add object points, image points (after refining them)
-                rospy.loginfo("CAMERA CALIBRATION - Image return val: {0}".format(ret))
-                if ret == True:
-                    rospy.loginfo("CAMERA CALIBRATION - Checkerboard corners found !")
-                    objpoints.append(objp)
-                    imgpoints.append(corners)
-                    # only used if we want to uncomment the rest and show corners of board, not sure how/if this will work with how images are being read in
-                    corners2 = cv.cornerSubPix(gray,corners, (11,11), (-1,-1), criteria)
+        for img in self.camera_photos:
+            rospy.loginfo("CAMERA CALIBRATION - Image: {0}".format(img))
+            # get a grey scale version of the image
+            gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+            # Find the chess board corners
+            ret, corners = cv.findChessboardCorners(gray, (boardY,boardX), None)
+            # If found, add object points, image points (after refining them)
+            rospy.loginfo("CAMERA CALIBRATION - Image return val: {0}".format(ret))
+            if ret == True:
+                rospy.loginfo("CAMERA CALIBRATION - Checkerboard corners found !")
+                objpoints.append(objp)
+                imgpoints.append(corners)
+                # only used if we want to uncomment the rest and show corners of board, not sure how/if this will work with how images are being read in
+                corners2 = cv.cornerSubPix(gray,corners, (11,11), (-1,-1), criteria)
 
-                    # Draw and display the corners, from the tutorial
-                    #cv.drawChessboardCorners(frame, (boardY,boardX), corners2, ret)
-                    #cv.imshow('img', frame)
-                    #cv.waitKey(500)
+                # Draw and display the corners, from the tutorial
+                #cv.drawChessboardCorners(frame, (boardY,boardX), corners2, ret)
+                #cv.imshow('img', frame)
+                #cv.waitKey(500)
 
-            ret, camera_matrix, distortion, rvecs, tvecs = cv.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
+        ret, camera_matrix, distortion, rvecs, tvecs = cv.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
 
-        # otherwise, use the matrices given and unpack them
-        else:
-            rospy.loginfo("CAMERA CALIBRATION - Using given values")
-
-            camera_matrix = request.camera_matrix
-            distortion = request.distortion
-            camera_matrix = np.array([ [camera_matrix[1],camera_matrix[2],camera_matrix[3]], [camera_matrix[4],camera_matrix[5],camera_matrix[6]], [camera_matrix[7],camera_matrix[8],camera_matrix[9]] ])
-            distortion = np.array([distortion[1],distortion[2],distortion[3],distortion[4],distortion[5]])
-
-        rospy.loginfo("CAMERA MAT: {0}".format(request.camera_matrix))
-        rospy.loginfo("DISTORTION: {0}".format(request.distortion))
+        rospy.loginfo("CAMERA MAT: {0}".format(camera_matrix))
+        rospy.loginfo("DISTORTION: {0}".format(distortion))
         return distortion, camera_matrix
 
 
 
-    def calibrate_height(self, request, distortion, camera_matrix):
+    def calibrate_height(self, distortion, camera_matrix):
         height = 0
         rospy.loginfo("CAMERA CALIBRATION - Calculating height with chessboard")
         if self.aruco_photo is None:
@@ -218,7 +203,7 @@ class CameraCalibration:
 
 
 
-    def calibrate_arucos(self, request, distortion, camera_matrix, height):
+    def calibrate_arucos(self, distortion, camera_matrix, height):
         rospy.loginfo("CAMERA CALIBRATION - Final steps, pray to god this works")
         transform_matrix = []
         arucoDict = cv.aruco.Dictionary_get(ARUCO_DICT[arucoDictName])
@@ -297,8 +282,10 @@ class CameraCalibration:
                 center_rotation[1] = yp_vec / LA.norm(yp_vec)
                 center_rotation[2] = z_vec / LA.norm(z_vec)
 
-                # For translation, take x of x vector and y of y vector
-                center_translation = np.array([x_vec[0], y_vec[1], height])
+                # For translation, use given height, average x and y components of aruco markers
+                x_tran = (topRightT[0] + topLeftT[0] + botRightT[0] + botLeftT[0]) / 4
+                y_tran = (topRightT[1] + topLeftT[1] + botRightT[1] + botLeftT[1]) / 4
+                center_translation = np.array([x_tran, y_tran, height])
 
                 rospy.loginfo("CAMERA CALIBRATION - Camera-to-Table Rotation Matrix: {0}".format(center_rotation))
                 rospy.loginfo("CAMERA CALIBRATION - Camera-to-Table Translation Vector: {0}".format(center_translation))
