@@ -157,21 +157,27 @@ class CalibrationGUI(Plugin):
 
     # Updating z dist manually
     def update_z_dist_in_camera_matrices(self, new_z):
-        camera_matrix_list = list(self.camera_matrix)
-        camera_transform_matrix_list = list(self.camera_transform_matrix)
+        try: 
+            camera_matrix_list = list(self.camera_matrix)
+            camera_transform_matrix_list = list(self.camera_transform_matrix)
 
-        if self.camera_matrix_step == 3:
-            camera_matrix_list[-1] = new_z
-        elif self.camera_matrix_step == 4:
-            camera_matrix_list[-5] = new_z
+            if self.camera_matrix_step == 3:
+                camera_matrix_list[-1] = new_z
+            elif self.camera_matrix_step == 4:
+                camera_matrix_list[-5] = new_z
 
-        if self.camera_transform_matrix_step == 3:
-            camera_transform_matrix_list[-1] = new_z
-        elif self.camera_transform_matrix_step == 4:
-            camera_transform_matrix_list[-5] = new_z
+            if self.camera_transform_matrix_step == 3:
+                camera_transform_matrix_list[-1] = new_z
+            elif self.camera_transform_matrix_step == 4:
+                camera_transform_matrix_list[-5] = new_z
 
-        self.camera_matrix = tuple(camera_matrix_list)
-        self.camera_transform_matrix = tuple(camera_transform_matrix_list)
+            self.camera_matrix = tuple(camera_matrix_list)
+            self.camera_transform_matrix = tuple(camera_transform_matrix_list)
+
+        except Exception as ex:
+            print(ex)
+            self.create_error_dialog("Failed to update z dist with exception: " + str(ex))
+
 
     # Dialog for import / save buttons on failure
     def create_error_dialog(self, error_msg):
@@ -293,9 +299,13 @@ class CalibrationGUI(Plugin):
     
 
     def record_touchpoint(self,location):
-        response = ArmRecordPointSRVResponse()
-        response = self.record_touchpoint_client(location)
-        rospy.loginfo("TOUCHPOINT RECORD: {0}".format(response.success))
+        try:
+            response = ArmRecordPointSRVResponse()
+            response = self.record_touchpoint_client(location)
+            rospy.loginfo("TOUCHPOINT RECORD: {0}".format(response.success))
+        except Exception as ex:
+            print(ex)
+            self.create_error_dialog("Could not record touchpt with exception" + str(ex))
 
     ####################################################################################
     ### GUI Event handlers
@@ -312,6 +322,7 @@ class CalibrationGUI(Plugin):
                 self.read_calibration_csv(filename)
                 self.is_import_calib_clicked = True
         except Exception as ex:
+            print(ex)
             self.create_error_dialog("Failed to import " + filename + ". Check the file format." + str(ex))
 
             # Reset values in case they were set when reading garbage csv
@@ -341,6 +352,7 @@ class CalibrationGUI(Plugin):
                 self.is_internal_camera_calibrated = True
 
         except Exception as ex:
+            print(ex)
             self.create_error_dialog("Failed to import " + filename + ". Check the file format." + str(ex))
 
             # Reset values in case they were set when reading garbage csv
@@ -396,23 +408,30 @@ class CalibrationGUI(Plugin):
     def handle_calibrate_camera_pose_clicked(self):
         # Set label content
         print("calibrating camera pose")
-        response = TriggerResponse()
-        response = self.take_picture_client()
-        rospy.loginfo("PICTURE TAKEN: {0}".format(response.success))
-        
-        response = CameraCalibrationSRVResponse()
-        response = self.camera_calibration_client(self.is_camera_calibration_imported, self.camera_distortion, 
-                                                  self.camera_matrix_step, self.camera_matrix)
-        rospy.loginfo("FOUND {0} {1} {2}".format(response.distortion, response.camera_matrix, response.transform_matrix))
-        self.camera_distortion = response.distortion
-        self.camera_matrix = response.camera_matrix
-        self.camera_matrix_step = response.camera_matrix_step
-        self.camera_transform_matrix = response.transform_matrix
-        self.camera_transform_matrix_step = response.transform_matrix_step
+        try:
+            response = TriggerResponse()
+            response = self.take_picture_client()
+            rospy.loginfo("PICTURE TAKEN: {0}".format(response.success))
+            
+            response = CameraCalibrationSRVResponse()
+            response = self.camera_calibration_client(self.is_camera_calibration_imported, self.camera_distortion, 
+                                                      self.camera_matrix_step, self.camera_matrix)
+            rospy.loginfo("FOUND {0} {1} {2}".format(response.distortion, response.camera_matrix, response.transform_matrix))
+            self.camera_distortion = response.distortion
+            self.camera_matrix = response.camera_matrix
+            self.camera_matrix_step = response.camera_matrix_step
+            self.camera_transform_matrix = response.transform_matrix
+            self.camera_transform_matrix_step = response.transform_matrix_step
 
-        self._widget.zDistFoundLabel.setText("Z Distance Found: "+ str(self.z_dist))
+            self._widget.zDistFoundLabel.setText("Z Distance Found: "+ str(self.z_dist))
 
-        self.is_camera_pose_calibrated = True
+            self.is_camera_pose_calibrated = True
+
+
+        except Exception as ex:
+            print(ex)
+            self.create_error_dialog("Could not calibrate camera pose with exception: " + str(ex))
+
         self.update_enabled()
 
     def handle_z_spinbox_change(self, new_value):
@@ -490,39 +509,52 @@ class CalibrationGUI(Plugin):
 
             if filename != None and filename != "":
                 self.save_camera_calibration_to_csv(filename)
-        except:
+        except Exception as ex:
+            print(ex)
             self.create_error_dialog("Failed to save camera calibration as " + filename)
 
         self.update_enabled()
     
     def handle_save_as_clicked(self):
         print("saving settings")
-        response = ArmCalibrationSRV()
-        response = self.arm_calibration_client(self.arm_initial_guess[0], self.arm_initial_guess[1], self.arm_initial_guess[2])
-        rospy.loginfo("FOUND: {0}".format(response.transform_matrix))
-
-        self.arm_transform_matrix = response.transform_matrix
-        self.arm_transform_matrix_step = response.transform_matrix_step
-
         try:
-            filename, selected_filter = QFileDialog.getSaveFileName(self._widget, "Save Calibration", "/home", "CSV files (*.csv)")
+            response = ArmCalibrationSRV()
+            response = self.arm_calibration_client(self.arm_initial_guess[0], self.arm_initial_guess[1], self.arm_initial_guess[2])
+            rospy.loginfo("FOUND: {0}".format(response.transform_matrix))
 
-            if filename != None and filename != "":
-                self.save_calibration_to_csv(filename)
-        except:
-            self.create_error_dialog("Failed to save calibration as " + filename)
+            self.arm_transform_matrix = response.transform_matrix
+            self.arm_transform_matrix_step = response.transform_matrix_step
+
+            try:
+                filename, selected_filter = QFileDialog.getSaveFileName(self._widget, "Save Calibration", "/home", "CSV files (*.csv)")
+
+                if filename != None and filename != "":
+                    self.save_calibration_to_csv(filename)
+            except Exception as ex:
+                print(ex)
+                self.create_error_dialog("Failed to save calibration as " + filename)
+
+        except Exception as ex:
+            print(ex)
+            self.create_error_dialog("Could not save results with exception: " + str(ex))
     
+        self.log_all_info()
+
     def handle_start_RViz_clicked(self):
         print("starting RViz")
-        response = ArmCalibrationSRV()
-        response = self.arm_calibration_client(self.arm_initial_guess[0], self.arm_initial_guess[1], self.arm_initial_guess[2])
-        rospy.loginfo("FOUND: {0}".format(response.transform_matrix))
-        self.arm_transform_matrix = response.transform_matrix
-        response = DisplayResultSRV()
-        response = self.display_result_client(self.arm_transform_matrix, self.camera_transform_matrix)
-        rospy.loginfo("FOUND: {0}".format(response.success))
+        try:
+            response = ArmCalibrationSRV()
+            response = self.arm_calibration_client(self.arm_initial_guess[0], self.arm_initial_guess[1], self.arm_initial_guess[2])
+            rospy.loginfo("FOUND: {0}".format(response.transform_matrix))
+            self.arm_transform_matrix = response.transform_matrix
+            response = DisplayResultSRV()
+            response = self.display_result_client(self.arm_transform_matrix, self.camera_transform_matrix)
+            rospy.loginfo("FOUND: {0}".format(response.success))
 
-        print(self.camera_matrix)
-        print(self.camera_transform_matrix)
-        print(self.arm_transform_matrix)
+        except Exception as ex:
+            print(ex)
+            self.create_error_dialog("Could not display results with exception: " + str(ex))
+
+        self.log_all_info()
+
 
