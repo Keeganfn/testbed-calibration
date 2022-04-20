@@ -155,6 +155,22 @@ class CalibrationGUI(Plugin):
         rospy.loginfo("GUI - arm_transform_matrix: {0}".format(self.arm_transform_matrix))
         rospy.loginfo("GUI - arm_transform_matrix_step: {0}".format(self.arm_transform_matrix_step))
 
+
+    def get_z_dist_from_camera_transform_matrix(self):
+        try:
+            z = 0
+            if len(self.camera_transform_matrix) > 0:
+                if self.camera_transform_matrix_step == 4:
+                    z = self.camera_transform_matrix[-5]
+                elif self.camera_transform_matrix_step == 3:
+                    z = self.camera_transform_matrix[-1]
+
+            return z
+        except Exception as ex:
+            print(ex)
+            self.create_error_dialog("Could not get z dist from camera transform matrix with exception: " + str(ex))
+            return 0
+
     # Updating z dist manually
     def update_z_dist_in_camera_matrices(self, new_z):
         try: 
@@ -422,7 +438,8 @@ class CalibrationGUI(Plugin):
             self.camera_matrix_step = response.camera_matrix_step
             self.camera_transform_matrix = response.transform_matrix
             self.camera_transform_matrix_step = response.transform_matrix_step
-
+            
+            self.z_dist = self.get_z_dist_from_camera_transform_matrix()
             self._widget.zDistFoundLabel.setText("Z Distance Found: "+ str(self.z_dist))
 
             self.is_camera_pose_calibrated = True
