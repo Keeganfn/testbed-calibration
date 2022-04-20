@@ -61,7 +61,7 @@ class ArmCalibration:
         print(newMatrix)
 
         # returns the transform matrix flattened to 1D array
-        return np.array.flatten(newMatrix)
+        return newMatrix.flatten()
 
     # Returns a 1x4 vector containing the XYZ coordinates of the end effector in the world frame.
     def __getEndEffInWorld(self, originToBase, endEffToBase):
@@ -153,7 +153,7 @@ class ArmCalibration:
 
         inverse_matrix = np.linalg.inv(newMatrix)
 
-        return newMatrix
+        return inverse_matrix
 
         #print(dx, dy, dz)
 

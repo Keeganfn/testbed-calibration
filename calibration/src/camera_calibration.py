@@ -107,7 +107,12 @@ class CameraCalibration:
         camera_matrix_step = 3
         transform_matrix_step = 4
         height = 0
-
+        self.take_picture_1 = True
+        #makes sure we take picture before returning
+        #TODO MAKE THIS SAFE
+        while self.take_picture_1 == False:
+            self.rate.sleep()
+  
         if request.existing_settings:
             distortion = request.distortion
             camera_matrix = request.camera_matrix
