@@ -17,6 +17,7 @@ from calibration.srv import ArmRecordPointSRV, ArmRecordPointSRVResponse, ArmRec
 from calibration.srv import DisplayResultSRV, DisplayResultSRVResponse, DisplayResultSRVRequest
 
 import csv
+from ast import literal_eval
 
 class CalibrationGUI(Plugin):
 
@@ -94,6 +95,10 @@ class CalibrationGUI(Plugin):
         self._widget.ySpinBox.valueChanged.connect(self.handle_initial_guess_y_spinbox_change)
         self._widget.zSpinBox.valueChanged.connect(self.handle_initial_guess_z_spinbox_change)
 
+        self._widget.xSpinBox.setMinimum(-10000)
+        self._widget.ySpinBox.setMinimum(-10000)
+        self._widget.zSpinBox.setMinimum(-10000)
+
 
         # Table
         self._widget.camTable.itemClicked.connect(self.handle_cam_table_item_clicked)
@@ -136,28 +141,43 @@ class CalibrationGUI(Plugin):
 
         self.csv_camera_header = ["testbed_selected", "arm_selected", "camera_selected", 
                              "camera_distortion", "camera_matrix_step", "camera_matrix",
-                             "camera_transform_matrix_step", "camera_transform_matrix"] 
+                             ] 
 
         # Testing adding in row to camera table
         self.insert_camera_to_table(["Camera 1", "No"])
+    
+    def log_all_info(self):
+        rospy.loginfo("GUI - camera_matrix: {0}".format(self.camera_matrix))
+        rospy.loginfo("GUI - camera_matrix_step: {0}".format(self.camera_matrix_step))
+        rospy.loginfo("GUI - camera_distortion: {0}".format(self.camera_distortion))
+        rospy.loginfo("GUI - camera_transform_matrix: {0}".format(self.camera_transform_matrix))
+        rospy.loginfo("GUI - camera_transform_matrix_step: {0}".format(self.camera_transform_matrix_step))
+        rospy.loginfo("GUI - arm_transform_matrix: {0}".format(self.arm_transform_matrix))
+        rospy.loginfo("GUI - arm_transform_matrix_step: {0}".format(self.arm_transform_matrix_step))
 
     # Updating z dist manually
     def update_z_dist_in_camera_matrices(self, new_z):
-        camera_matrix_list = list(self.camera_matrix)
-        camera_transform_matrix_list = list(self.camera_transform_matrix)
+        try: 
+            camera_matrix_list = list(self.camera_matrix)
+            camera_transform_matrix_list = list(self.camera_transform_matrix)
 
-        if self.camera_matrix_step == 3:
-            camera_matrix_list[-1] = new_z
-        elif self.camera_matrix_step == 4:
-            camera_matrix_list[-5] = new_z
+            if self.camera_matrix_step == 3:
+                camera_matrix_list[-1] = new_z
+            elif self.camera_matrix_step == 4:
+                camera_matrix_list[-5] = new_z
 
-        if self.camera_transform_matrix_step == 3:
-            camera_transform_matrix_list[-1] = new_z
-        elif self.camera_transform_matrix_step == 4:
-            camera_transform_matrix_list[-5] = new_z
+            if self.camera_transform_matrix_step == 3:
+                camera_transform_matrix_list[-1] = new_z
+            elif self.camera_transform_matrix_step == 4:
+                camera_transform_matrix_list[-5] = new_z
 
-        self.camera_matrix = tuple(camera_matrix_list)
-        self.camera_transform_matrix = tuple(camera_transform_matrix_list)
+            self.camera_matrix = tuple(camera_matrix_list)
+            self.camera_transform_matrix = tuple(camera_transform_matrix_list)
+
+        except Exception as ex:
+            print(ex)
+            self.create_error_dialog("Failed to update z dist with exception: " + str(ex))
+
 
     # Dialog for import / save buttons on failure
     def create_error_dialog(self, error_msg):
@@ -183,11 +203,12 @@ class CalibrationGUI(Plugin):
             self.testbed_selected = csv_arr[1][0]
             self.arm_selected = csv_arr[1][1]
             self.camera_selected = csv_arr[1][2]
-            self.camera_distortion = csv_arr[1][3]
-            self.camera_matrix_step = csv_arr[1][4]
-            self.camera_matrix = csv_arr[1][5]
-            self.camera_transform_matrix_step = csv_arr[1][6]
-            self.camera_transform_matrix = csv_arr[1][7]
+            self.camera_distortion = literal_eval(csv_arr[1][3])
+            self.camera_matrix_step = literal_eval(csv_arr[1][4])
+            self.camera_matrix = literal_eval(csv_arr[1][5])
+
+        self.log_all_info()
+
 
     def read_calibration_csv(self, filename):
         with open(filename, "r") as f:
@@ -204,13 +225,15 @@ class CalibrationGUI(Plugin):
             self.testbed_selected = csv_arr[1][0]
             self.arm_selected = csv_arr[1][1]
             self.camera_selected = csv_arr[1][2]
-            self.camera_distortion = csv_arr[1][3]
-            self.camera_matrix_step = csv_arr[1][4]
-            self.camera_matrix = csv_arr[1][5]
-            self.camera_transform_matrix_step = csv_arr[1][6]
-            self.camera_transform_matrix = csv_arr[1][7]
-            self.arm_transform_matrix_step = csv_arr[1][8]
-            self.arm_transform_matrix = csv_arr[1][9]
+            self.camera_distortion = literal_eval(csv_arr[1][3])
+            self.camera_matrix_step = literal_eval(csv_arr[1][4])
+            self.camera_matrix = literal_eval(csv_arr[1][5])
+            self.camera_transform_matrix_step = literal_eval(csv_arr[1][6])
+            self.camera_transform_matrix = literal_eval(csv_arr[1][7])
+            self.arm_transform_matrix_step = literal_eval(csv_arr[1][8])
+            self.arm_transform_matrix = literal_eval(csv_arr[1][9])
+
+        self.log_all_info()
 
     def save_calibration_to_csv(self, filename):
         filename = filename + ".csv"
@@ -222,6 +245,8 @@ class CalibrationGUI(Plugin):
                                  self.camera_transform_matrix_step, self.camera_transform_matrix, 
                                  self.arm_transform_matrix_step, self.arm_transform_matrix])
 
+        self.log_all_info()
+
     def save_camera_calibration_to_csv(self, filename):
         filename = filename + ".csv"
         with open(filename,"w") as f:
@@ -229,7 +254,9 @@ class CalibrationGUI(Plugin):
             csv_writer.writerow(self.csv_camera_header)
             csv_writer.writerow([self.testbed_selected, self.arm_selected, self.camera_selected, 
                                  self.camera_distortion, self.camera_matrix_step, self.camera_matrix,
-                                 self.camera_transform_matrix_step, self.camera_transform_matrix])
+                                 ])
+
+        self.log_all_info()
 
     # Adding cameras into the table
     def insert_camera_to_table(self, row_list):
@@ -249,8 +276,8 @@ class CalibrationGUI(Plugin):
 
         self._widget.pictureButton.setEnabled(self.is_camera_selected and (not self.is_camera_calibration_imported) and (not self.is_internal_camera_calibrated) and (not self.is_import_calib_clicked))
 
-        camera_pose_enabled = self.is_internal_camera_calibrated and (not self.is_camera_calibration_imported) and (not self.is_mark_complete) and (not self.is_import_calib_clicked)
-        self._widget.cameraPoseButton.setEnabled(camera_pose_enabled)
+        camera_pose_enabled = self.is_internal_camera_calibrated and (not self.is_mark_complete) and (not self.is_import_calib_clicked)
+        self._widget.cameraPoseButton.setEnabled(camera_pose_enabled and (not self.is_camera_pose_calibrated))
         self._widget.zDistSpinBox.setEnabled(camera_pose_enabled and self.is_camera_pose_calibrated)
         self._widget.markCompleteButton.setEnabled(camera_pose_enabled and self.is_camera_pose_calibrated)
         self._widget.saveCalibButton.setEnabled(camera_pose_enabled and self.is_camera_pose_calibrated)
@@ -272,9 +299,13 @@ class CalibrationGUI(Plugin):
     
 
     def record_touchpoint(self,location):
-        response = ArmRecordPointSRVResponse()
-        response = self.record_touchpoint_client(location)
-        rospy.loginfo("TOUCHPOINT RECORD: {0}".format(response.success))
+        try:
+            response = ArmRecordPointSRVResponse()
+            response = self.record_touchpoint_client(location)
+            rospy.loginfo("TOUCHPOINT RECORD: {0}".format(response.success))
+        except Exception as ex:
+            print(ex)
+            self.create_error_dialog("Could not record touchpt with exception" + str(ex))
 
     ####################################################################################
     ### GUI Event handlers
@@ -291,6 +322,7 @@ class CalibrationGUI(Plugin):
                 self.read_calibration_csv(filename)
                 self.is_import_calib_clicked = True
         except Exception as ex:
+            print(ex)
             self.create_error_dialog("Failed to import " + filename + ". Check the file format." + str(ex))
 
             # Reset values in case they were set when reading garbage csv
@@ -318,10 +350,9 @@ class CalibrationGUI(Plugin):
                 self.read_camera_calibration_csv(filename)
                 self.is_camera_calibration_imported = True
                 self.is_internal_camera_calibrated = True
-                self.is_camera_pose_calibrated = True
-                self.is_mark_complete = True
 
         except Exception as ex:
+            print(ex)
             self.create_error_dialog("Failed to import " + filename + ". Check the file format." + str(ex))
 
             # Reset values in case they were set when reading garbage csv
@@ -331,8 +362,6 @@ class CalibrationGUI(Plugin):
             self.camera_distortion = None
             self.camera_matrix_step = None
             self.camera_matrix = None
-            self.camera_transform_matrix_step = None
-            self.camera_transform_matrix = None
 
             self.is_testbed_selected = False
             self.is_arm_selected = False
@@ -366,12 +395,12 @@ class CalibrationGUI(Plugin):
         rospy.loginfo("PICTURE TAKEN: {0}".format(response.success))
         
         #Update progress bar
-        if self.total_pictures < 31:
+        if self.total_pictures < 30:
             self.total_pictures+=1
-            self._widget.pictureProgressLabel.setText(str(self.total_pictures)+"/31")
+            self._widget.pictureProgressLabel.setText(str(self.total_pictures)+"/30")
             self._widget.progressBar.setValue(self.total_pictures)
 
-            if self.total_pictures == 31:
+            if self.total_pictures == 30:
                 self.is_internal_camera_calibrated = True
 
         self.update_enabled()
@@ -379,19 +408,30 @@ class CalibrationGUI(Plugin):
     def handle_calibrate_camera_pose_clicked(self):
         # Set label content
         print("calibrating camera pose")
-        response = CameraCalibrationSRVResponse()
-        response = self.camera_calibration_client(self.is_camera_calibration_imported, self.camera_distortion, 
-                                                  self.camera_matrix, self.camera_matrix_step)
-        rospy.loginfo("FOUND {0} {1} {2}".format(response.distortion, response.camera_matrix, response.transform_matrix))
-        self.camera_distortion = response.distortion
-        self.camera_matrix = response.camera_matrix
-        self.camera_matrix_step = response.camera_matrix_step
-        self.camera_transform_matrix = response.transform_matrix
-        self.camera_transform_matrix_step = response.transform_matrix_step
+        try:
+            response = TriggerResponse()
+            response = self.take_picture_client()
+            rospy.loginfo("PICTURE TAKEN: {0}".format(response.success))
+            
+            response = CameraCalibrationSRVResponse()
+            response = self.camera_calibration_client(self.is_camera_calibration_imported, self.camera_distortion, 
+                                                      self.camera_matrix_step, self.camera_matrix)
+            rospy.loginfo("FOUND {0} {1} {2}".format(response.distortion, response.camera_matrix, response.transform_matrix))
+            self.camera_distortion = response.distortion
+            self.camera_matrix = response.camera_matrix
+            self.camera_matrix_step = response.camera_matrix_step
+            self.camera_transform_matrix = response.transform_matrix
+            self.camera_transform_matrix_step = response.transform_matrix_step
 
-        self._widget.zDistFoundLabel.setText("Z Distance Found: "+ str(self.z_dist))
+            self._widget.zDistFoundLabel.setText("Z Distance Found: "+ str(self.z_dist))
 
-        self.is_camera_pose_calibrated = True
+            self.is_camera_pose_calibrated = True
+
+
+        except Exception as ex:
+            print(ex)
+            self.create_error_dialog("Could not calibrate camera pose with exception: " + str(ex))
+
         self.update_enabled()
 
     def handle_z_spinbox_change(self, new_value):
@@ -469,39 +509,52 @@ class CalibrationGUI(Plugin):
 
             if filename != None and filename != "":
                 self.save_camera_calibration_to_csv(filename)
-        except:
+        except Exception as ex:
+            print(ex)
             self.create_error_dialog("Failed to save camera calibration as " + filename)
 
         self.update_enabled()
     
     def handle_save_as_clicked(self):
         print("saving settings")
-        response = ArmCalibrationSRV()
-        response = self.arm_calibration_client(self.arm_initial_guess[0], self.arm_initial_guess[1], self.arm_initial_guess[2])
-        rospy.loginfo("FOUND: {0}".format(response.transform_matrix))
-
-        self.arm_transform_matrix = response.transform_matrix
-        self.arm_transform_matrix_step = response.transform_matrix_step
-
         try:
-            filename, selected_filter = QFileDialog.getSaveFileName(self._widget, "Save Calibration", "/home", "CSV files (*.csv)")
+            response = ArmCalibrationSRV()
+            response = self.arm_calibration_client(self.arm_initial_guess[0], self.arm_initial_guess[1], self.arm_initial_guess[2])
+            rospy.loginfo("FOUND: {0}".format(response.transform_matrix))
 
-            if filename != None and filename != "":
-                self.save_calibration_to_csv(filename)
-        except:
-            self.create_error_dialog("Failed to save calibration as " + filename)
+            self.arm_transform_matrix = response.transform_matrix
+            self.arm_transform_matrix_step = response.transform_matrix_step
+
+            try:
+                filename, selected_filter = QFileDialog.getSaveFileName(self._widget, "Save Calibration", "/home", "CSV files (*.csv)")
+
+                if filename != None and filename != "":
+                    self.save_calibration_to_csv(filename)
+            except Exception as ex:
+                print(ex)
+                self.create_error_dialog("Failed to save calibration as " + filename)
+
+        except Exception as ex:
+            print(ex)
+            self.create_error_dialog("Could not save results with exception: " + str(ex))
     
+        self.log_all_info()
+
     def handle_start_RViz_clicked(self):
         print("starting RViz")
-        response = ArmCalibrationSRV()
-        response = self.arm_calibration_client(self.arm_initial_guess[0], self.arm_initial_guess[1], self.arm_initial_guess[2])
-        rospy.loginfo("FOUND: {0}".format(response.transform_matrix))
-        self.arm_transform_matrix = response.transform_matrix
-        response = DisplayResultSRV()
-        response = self.display_result_client(self.arm_transform_matrix, self.camera_transform_matrix)
-        rospy.loginfo("FOUND: {0}".format(response.success))
+        try:
+            response = ArmCalibrationSRV()
+            response = self.arm_calibration_client(self.arm_initial_guess[0], self.arm_initial_guess[1], self.arm_initial_guess[2])
+            rospy.loginfo("FOUND: {0}".format(response.transform_matrix))
+            self.arm_transform_matrix = response.transform_matrix
+            response = DisplayResultSRV()
+            response = self.display_result_client(self.arm_transform_matrix, self.camera_transform_matrix)
+            rospy.loginfo("FOUND: {0}".format(response.success))
 
-        print(self.camera_matrix)
-        print(self.camera_transform_matrix)
-        print(self.arm_transform_matrix)
+        except Exception as ex:
+            print(ex)
+            self.create_error_dialog("Could not display results with exception: " + str(ex))
+
+        self.log_all_info()
+
 
