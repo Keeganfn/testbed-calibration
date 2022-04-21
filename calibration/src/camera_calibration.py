@@ -10,7 +10,7 @@ import tf
 from cv_bridge import CvBridge, CvBridgeError
 
 from sensor_msgs.msg import Image
-from std_srvs.srv import Trigger
+from std_srvs.srv import Trigger, TriggerResponse
 from calibration.srv import CameraCalibrationSRV, CameraCalibrationSRVResponse
 
 
@@ -76,7 +76,8 @@ class CameraCalibration:
         while self.take_picture_1 == False:
             self.rate.sleep()
         #should return an error message if something went wrong, and a boolean signifying success or failure
-        return self.picture_error_1, str(self.picture_error_1)
+        return TriggerResponse(success=True, message="Hey, roger that; we'll be right there!")
+        #return self.picture_error_1, str(self.picture_error_1)
 
     #corresponds to camera1, multiple camera support will come later
     def camera_1_callback(self, msg):
@@ -92,9 +93,10 @@ class CameraCalibration:
             # now that we have opencv image, check if this should be added to camera calibration list (we haven't taken 30 photos yet)
             if len(self.camera_photos) < 30:
                 self.camera_photos.append(image)
-            # if we taken all of our calibration photos, write image to our special aruco photo (photo has checkerboard on table and arucos in frame, or height is provided)
+           # if we taken all of our calibration photos, write image to our special aruco photo (photo has checkerboard on table and arucos in frame, or height is provided)
             else:
                 self.aruco_photo = image
+            print(self.camera_photos)
 
             self.picture_error_1 = False
             self.take_picture_1 = False
@@ -107,13 +109,10 @@ class CameraCalibration:
         camera_matrix_step = 3
         transform_matrix_step = 4
         height = 0
-        self.take_picture_1 = True
-        #makes sure we take picture before returning
-        #TODO MAKE THIS SAFE
-        while self.take_picture_1 == False:
-            self.rate.sleep()
-  
+
         if request.existing_settings:
+            print(self.camera_photos)
+            self.aruco_photo = self.camera_photos[0]
             distortion = request.distortion
             camera_matrix = request.camera_matrix
             camera_matrix = np.array([ [camera_matrix[0],camera_matrix[1],camera_matrix[2]], [camera_matrix[3],camera_matrix[4],camera_matrix[5]], [camera_matrix[6],camera_matrix[7],camera_matrix[8]] ])

@@ -54,6 +54,7 @@ class ArmCalibration:
         print(estOriginToBase)
 
         arr_translations = self.__getTranslations(estOriginToBase, tp_data)
+        print(arr_translations)
         
         newMatrix = self.__updateTransMatrix(arr_translations, estOriginToBase)
         
@@ -109,12 +110,15 @@ class ArmCalibration:
 
         print("arr_translations[0][:-1] = ")
         print(arr_translations[0][:-1])
-        v_12 = arr_translations[1][:-1] - arr_translations[2][:-1]
-        v_43 = arr_translations[0][:-1] - arr_translations[3][:-1]
+        #v_12 = arr_translations[1][:-1] - arr_translations[2][:-1]
+        #v_43 = arr_translations[0][:-1] - arr_translations[3][:-1] 
+        v_12 = arr_translations[0][:-1] - arr_translations[1][:-1]
+        v_43 = arr_translations[3][:-1] - arr_translations[2][:-1]
         x_vec = (v_12 + v_43) / 2
-
-        v_14 = arr_translations[0][:-1] - arr_translations[1][:-1]
-        v_23 = arr_translations[3][:-1] - arr_translations[2][:-1]
+        #v_14 = arr_translations[0][:-1] - arr_translations[1][:-1]
+        #v_23 = arr_translations[3][:-1] - arr_translations[2][:-1]
+        v_14 = arr_translations[0][:-1] - arr_translations[3][:-1]
+        v_23 = arr_translations[1][:-1] - arr_translations[2][:-1]
         y_vec = (v_14 + v_23) / 2
 
         yp_vec = y_vec - np.dot(x_vec, y_vec) * x_vec
@@ -174,8 +178,7 @@ class ArmCalibration:
                 return True
 
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                
-                return False
+                continue
 
 
     def record_touchpoint_srv_callback(self, request):
