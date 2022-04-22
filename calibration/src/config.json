@@ -1,4 +1,12 @@
 {
+    "robot_name_options": ["robot name 1", "robot name 2"],
+    "robot_base_link": "base link",
+    "robot_end_effector" : "end effector",
+    "testbed_name_options": ["testbed name 1", "testbed name 2"],
+    "testbed_size": [1,2],
     "checkerboard_rows_default": 10,
-    "checkerboard_cols_default": 19
+    "checkerboard_cols_default": 19,
+    "aruco_sidelength": 23,
+    "aruco_dict_used": "some string",
+    "aruco_ids": [1,2,3]
 }

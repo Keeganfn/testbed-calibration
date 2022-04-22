@@ -54,10 +54,6 @@ class CalibrationGUI(Plugin):
         rospy.wait_for_service("record_touchpoint_srv")
         self.record_touchpoint_client = rospy.ServiceProxy("record_touchpoint_srv", ArmRecordPointSRV)
 
-        # defaults for checkerboard if not found in config
-        self.checkerboard_rows = 9
-        self.checkerboard_cols = 9
-
         # Stored values of calibration
         self.testbed_selected = None
         self.arm_selected = None
@@ -126,8 +122,6 @@ class CalibrationGUI(Plugin):
 
         # Grey out everything
         self._widget.pictureButton.setEnabled(False)
-        self._widget.camTable.setEnabled(False)
-        self._widget.importCamButton.setEnabled(False)
         self._widget.cameraPoseButton.setEnabled(False)
         self._widget.zDistSpinBox.setEnabled(False)
         self._widget.xSpinBox.setEnabled(False)
@@ -155,32 +149,61 @@ class CalibrationGUI(Plugin):
         # Testing adding in row to camera table
         self.insert_camera_to_table(["Camera 1", "No"])
 
-        self.config_filepath = os.path.join(rospkg.RosPack().get_path('calibration'), 'src', 'config.json')
-        
+        # Hardcoded config defaults in case no config file
+        # @ KEEGAN OR @ ADAM
+        self.robot_name_options= ["robot name 1", "blah"]
+
+        self.robot_base_link= "base link" 
+        self.robot_end_effector= "end effector"
+
+        self.testbed_name_options= ["name here", "name"]
+
+        self.testbed_size = [1.2, 3.4]
+
+        self.checkerboard_rows = 9
+        self.checkerboard_cols = 9
+
+        self.aruco_sidelength = 1
+        self.aruco_dict_used = "some string?"
+        self.aruco_ids= [1,2,3]
+
         # import config file 
-        self.read_config_file(self.config_filepath)
+        self.read_config_file()
+
+
+        self.set_gui_options()
+
+    def set_gui_options(self):
+        self._widget.testBedComboBox.clear()
+        self._widget.armComboBox.clear()
+
+        self._widget.testBedComboBox.addItems(self.testbed_name_options)
+        self._widget.armComboBox.addItems(self.robot_name_options)
 
         #set default to checkerboard rows/cols
         self._widget.rowsSpinBox.setValue(self.checkerboard_rows)
         self._widget.colsSpinBox.setValue(self.checkerboard_cols)
 
-    def read_config_file(self, filepath):
+        self.testbed_selected = self.testbed_name_options[0]
+        self.arm_selected = self.robot_name_options[0]
+
+    def read_config_file(self):
         try:
+            filepath = os.path.join(rospkg.RosPack().get_path('calibration'), 'src', 'config.json')
             with open(filepath, "r") as fp:
                 config_dict = json.load(fp)
-                self.robot_name_default= config_dict["robot_name_default"]
                 self.robot_name_options= config_dict["robot_name_options"]
 
                 self.robot_base_link= config_dict["robot_base_link"]
                 self.robot_end_effector= config_dict["robot_end_effector"]
 
-                self.testbed_name_default= config_dict["testbed_name_default"]
                 self.testbed_name_options= config_dict["testbed_name_options"]
 
-                self.testbed_size = config_dict["testbed_size "]
+                self.testbed_size = config_dict["testbed_size"]
 
                 self.checkerboard_rows = config_dict["checkerboard_rows_default"]
                 self.checkerboard_cols = config_dict["checkerboard_cols_default"]
+
                 self.aruco_sidelength = config_dict["aruco_sidelength"]
                 self.aruco_dict_used = config_dict["aruco_dict_used"]
                 self.aruco_ids= config_dict["aruco_ids"]
@@ -330,8 +353,8 @@ class CalibrationGUI(Plugin):
 
     # Updates what is greyed out
     def update_enabled(self):
-        self._widget.camTable.setEnabled(self.is_testbed_selected and self.is_arm_selected and (not self.is_import_calib_clicked))
-        self._widget.importCamButton.setEnabled(self.is_testbed_selected and self.is_arm_selected)
+        self._widget.camTable.setEnabled(not self.is_import_calib_clicked)
+        self._widget.importCamButton.setEnabled(not self.is_import_calib_clicked)
 
         self._widget.pictureButton.setEnabled(self.is_camera_selected and (not self.is_camera_calibration_imported) and (not self.is_internal_camera_calibrated) and (not self.is_import_calib_clicked))
 
