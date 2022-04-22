@@ -428,6 +428,7 @@ class CalibrationGUI(Plugin):
             response = TriggerResponse()
             response = self.take_picture_client()
             rospy.loginfo("PICTURE TAKEN: {0}".format(response.success))
+            rospy.sleep(1)
             
             response = CameraCalibrationSRVResponse()
             response = self.camera_calibration_client(self.is_camera_calibration_imported, self.camera_distortion, 
@@ -560,10 +561,11 @@ class CalibrationGUI(Plugin):
     def handle_start_RViz_clicked(self):
         print("starting RViz")
         try:
-            response = ArmCalibrationSRV()
-            response = self.arm_calibration_client(self.arm_initial_guess[0], self.arm_initial_guess[1], self.arm_initial_guess[2])
-            rospy.loginfo("FOUND: {0}".format(response.transform_matrix))
-            self.arm_transform_matrix = response.transform_matrix
+            if not self.is_import_calib_clicked:
+                response = ArmCalibrationSRV()
+                response = self.arm_calibration_client(self.arm_initial_guess[0], self.arm_initial_guess[1], self.arm_initial_guess[2])
+                rospy.loginfo("FOUND: {0}".format(response.transform_matrix))
+                self.arm_transform_matrix = response.transform_matrix
             response = DisplayResultSRV()
             response = self.display_result_client(self.arm_transform_matrix, self.camera_transform_matrix)
             rospy.loginfo("FOUND: {0}".format(response.success))
