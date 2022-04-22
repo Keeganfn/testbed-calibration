@@ -18,6 +18,7 @@ from calibration.srv import DisplayResultSRV, DisplayResultSRVResponse, DisplayR
 
 import csv
 from ast import literal_eval
+import json
 
 class CalibrationGUI(Plugin):
 
@@ -154,9 +155,38 @@ class CalibrationGUI(Plugin):
         # Testing adding in row to camera table
         self.insert_camera_to_table(["Camera 1", "No"])
 
+        self.config_filepath = os.path.join(rospkg.RosPack().get_path('calibration'), 'src', 'config.json')
+        
+        # import config file 
+        self.read_config_file(self.config_filepath)
+
         #set default to checkerboard rows/cols
         self._widget.rowsSpinBox.setValue(self.checkerboard_rows)
         self._widget.colsSpinBox.setValue(self.checkerboard_cols)
+
+    def read_config_file(self, filepath):
+        try:
+            with open(filepath, "r") as fp:
+                config_dict = json.load(fp)
+                self.robot_name_default= config_dict["robot_name_default"]
+                self.robot_name_options= config_dict["robot_name_options"]
+
+                self.robot_base_link= config_dict["robot_base_link"]
+                self.robot_end_effector= config_dict["robot_end_effector"]
+
+                self.testbed_name_default= config_dict["testbed_name_default"]
+                self.testbed_name_options= config_dict["testbed_name_options"]
+
+                self.testbed_size = config_dict["testbed_size "]
+
+                self.checkerboard_rows = config_dict["checkerboard_rows_default"]
+                self.checkerboard_cols = config_dict["checkerboard_cols_default"]
+                self.aruco_sidelength = config_dict["aruco_sidelength"]
+                self.aruco_dict_used = config_dict["aruco_dict_used"]
+                self.aruco_ids= config_dict["aruco_ids"]
+
+        except Exception as ex:
+            rospy.loginfo("GUI - COULD NOT LOAD " + filepath + " with exception " + str(ex))
 
     
     def log_all_info(self):
