@@ -53,6 +53,10 @@ class CalibrationGUI(Plugin):
         rospy.wait_for_service("record_touchpoint_srv")
         self.record_touchpoint_client = rospy.ServiceProxy("record_touchpoint_srv", ArmRecordPointSRV)
 
+        # defaults for checkerboard if not found in config
+        self.checkerboard_rows = 9
+        self.checkerboard_cols = 9
+
         # Stored values of calibration
         self.testbed_selected = None
         self.arm_selected = None
@@ -98,6 +102,10 @@ class CalibrationGUI(Plugin):
         self._widget.xSpinBox.setMinimum(-10000)
         self._widget.ySpinBox.setMinimum(-10000)
         self._widget.zSpinBox.setMinimum(-10000)
+
+        # Checkerboard rows / cols
+        self._widget.rowsSpinBox.valueChanged.connect(self.handle_cb_rows_spinbox_changed)
+        self._widget.colsSpinBox.valueChanged.connect(self.handle_cb_cols_spinbox_changed)
 
 
         # Table
@@ -145,6 +153,11 @@ class CalibrationGUI(Plugin):
 
         # Testing adding in row to camera table
         self.insert_camera_to_table(["Camera 1", "No"])
+
+        #set default to checkerboard rows/cols
+        self._widget.rowsSpinBox.setValue(self.checkerboard_rows)
+        self._widget.colsSpinBox.setValue(self.checkerboard_cols)
+
     
     def log_all_info(self):
         rospy.loginfo("GUI - camera_matrix: {0}".format(self.camera_matrix))
@@ -326,6 +339,13 @@ class CalibrationGUI(Plugin):
     ####################################################################################
     ### GUI Event handlers
     ####################################################################################
+    def handle_cb_rows_spinbox_changed(self, new_value):
+        self.checkerboard_rows = new_value
+        print("checkerboard rows: " + str(self.checkerboard_rows))
+
+    def handle_cb_cols_spinbox_changed(self, new_value):
+        self.checkerboard_cols = new_value
+        print("checkerboard rows: " + str(self.checkerboard_cols))
 
     def handle_import_calib_clicked(self):
         print("importing calibration settings")
@@ -459,12 +479,15 @@ class CalibrationGUI(Plugin):
 
     def handle_initial_guess_x_spinbox_change(self, new_value):
         self.arm_initial_guess[0] = new_value
+        print(self.arm_initial_guess)
 
     def handle_initial_guess_y_spinbox_change(self, new_value):
         self.arm_initial_guess[1] = new_value
+        print(self.arm_initial_guess)
 
     def handle_initial_guess_z_spinbox_change(self, new_value):
         self.arm_initial_guess[2] = new_value
+        print(self.arm_initial_guess)
 
     def handle_testbed_change(self, i):
         if i != 0:
