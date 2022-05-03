@@ -163,12 +163,21 @@ class ArmCalibration:
 
     # Records the end effector location in the world frame. Stores transformation matrix in tp_data.
     def __recordTouchpoint(self, id):
+        if rospy.has_param("calibration_config"): 
+            #USE THESE VALUES HOWEVER YOU WANT
+            config = rospy.get_param("calibration_config")
+            base_frame = config["robot_base_link"]
+            end_effector_frame = config["robot_end_effector"]
+        else:
+            rospy.loginfo("CALIBRATION CONFIG NOT FOUND")
+            base_frame = "j2s7s300_link_base"
+            end_effector_frame = "j2s7s300_end_effector"
 
         listener = tf.TransformListener()
 
         while True:
             try:
-                translation, rotation = listener.lookupTransform('j2s7s300_link_base', 'j2s7s300_end_effector', rospy.Time())
+                translation, rotation = listener.lookupTransform(base_frame, end_effector, rospy.Time())
                 transform_mat = listener.fromTranslationRotation(translation, rotation)
 
                 self.tp_data[id] = transform_mat

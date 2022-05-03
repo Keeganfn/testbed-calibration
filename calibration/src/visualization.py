@@ -18,6 +18,9 @@ class VisualizeResult:
     BASE_FRAME = "world"
     TESTBED_FRAME = "testbed"
     CAMERA_FRAME = "camera_1"
+    TESTBED_L = .5
+    TESTBED_W = .5
+    TESTBED_H = .01
 
 
     def __init__(self):
@@ -32,6 +35,15 @@ class VisualizeResult:
         self.camera_marker_pub = rospy.Publisher("camera_marker", Marker, queue_size=10, latch=True)
         
     def display_result_srv_callback(self, request):
+        if rospy.has_param("calibration_config"): 
+            #USE THESE VALUES HOWEVER YOU WANT
+            config = rospy.get_param("calibration_config")
+            self.BASE_FRAME = config["robot_base_link"]
+            self.TESTBED_L = config["testbed_size"][0]
+            self.TESTBED_W = config["testbed_size"][1]
+        else:
+            rospy.loginfo("CALIBRATION CONFIG NOT FOUND")
+
         rospy.loginfo("ARM TO TESTBED IS: {0}".format(request.arm_to_testbed))
         rospy.loginfo("TESTBED TO CAMERA IS: {0}".format(request.testbed_to_camera))
         arm_to_testbed = request.arm_to_testbed
@@ -95,9 +107,9 @@ class VisualizeResult:
         table.type = table.CUBE
         table.id = 0
         table.action = table.ADD
-        table.scale.x = .5
-        table.scale.y = .5
-        table.scale.z = .01
+        table.scale.x = self.TESTBED_L
+        table.scale.y = self.TESTBED_W
+        table.scale.z = self.TESTBED_H
         table.color.r = 0
         table.color.g = 1
         table.color.b = 0

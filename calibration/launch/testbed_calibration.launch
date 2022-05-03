@@ -1,10 +1,13 @@
 <launch>
+
+   <arg name="video_device" default="2" />
+
    <!-- launch video stream -->
    <include file="$(find video_stream_opencv)/launch/camera.launch" >
         <!-- node name and ros graph name -->
         <arg name="camera_name" value="camera_1" />
         <!-- means video device 0, /dev/video0 -->
-        <arg name="video_stream_provider" value="2" />
+        <arg name="video_stream_provider" value="$(arg video_device)" />
    </include>
 
     <node pkg="calibration"

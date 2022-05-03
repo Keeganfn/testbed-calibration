@@ -18,6 +18,7 @@ from calibration.srv import DisplayResultSRV, DisplayResultSRVResponse, DisplayR
 
 import csv
 from ast import literal_eval
+import json
 
 class CalibrationGUI(Plugin):
 
@@ -99,6 +100,10 @@ class CalibrationGUI(Plugin):
         self._widget.ySpinBox.setMinimum(-10000)
         self._widget.zSpinBox.setMinimum(-10000)
 
+        # Checkerboard rows / cols
+        self._widget.rowsSpinBox.valueChanged.connect(self.handle_cb_rows_spinbox_changed)
+        self._widget.colsSpinBox.valueChanged.connect(self.handle_cb_cols_spinbox_changed)
+
 
         # Table
         self._widget.camTable.itemClicked.connect(self.handle_cam_table_item_clicked)
@@ -117,8 +122,6 @@ class CalibrationGUI(Plugin):
 
         # Grey out everything
         self._widget.pictureButton.setEnabled(False)
-        self._widget.camTable.setEnabled(False)
-        self._widget.importCamButton.setEnabled(False)
         self._widget.cameraPoseButton.setEnabled(False)
         self._widget.zDistSpinBox.setEnabled(False)
         self._widget.xSpinBox.setEnabled(False)
@@ -145,6 +148,71 @@ class CalibrationGUI(Plugin):
 
         # Testing adding in row to camera table
         self.insert_camera_to_table(["Camera 1", "No"])
+
+        # Hardcoded config defaults in case no config file
+        # @ KEEGAN OR @ ADAM
+        self.robot_name_options= ["robot name 1", "blah"]
+
+        self.robot_base_link= "base link" 
+        self.robot_end_effector= "end effector"
+
+        self.testbed_name_options= ["name here", "name"]
+
+        self.testbed_size = [1.2, 3.4]
+
+        self.checkerboard_rows = 9
+        self.checkerboard_cols = 9
+
+        self.aruco_sidelength = 1
+        self.aruco_dict_used = "some string?"
+        self.aruco_ids= [1,2,3]
+
+        # import config file 
+        self.read_config_file()
+
+
+        self.set_gui_options()
+
+    def set_gui_options(self):
+        self._widget.testBedComboBox.clear()
+        self._widget.armComboBox.clear()
+
+        self._widget.testBedComboBox.addItems(self.testbed_name_options)
+        self._widget.armComboBox.addItems(self.robot_name_options)
+
+        #set default to checkerboard rows/cols
+        self._widget.rowsSpinBox.setValue(self.checkerboard_rows)
+        self._widget.colsSpinBox.setValue(self.checkerboard_cols)
+
+        self.testbed_selected = self.testbed_name_options[0]
+        self.arm_selected = self.robot_name_options[0]
+
+    def read_config_file(self):
+        try:
+            filepath = os.path.join(rospkg.RosPack().get_path('calibration'), 'src', 'config.json')
+            with open(filepath, "r") as fp:
+                config_dict = json.load(fp)
+                self.robot_name_options= config_dict["robot_name_options"]
+
+                self.robot_base_link= config_dict["robot_base_link"]
+                self.robot_end_effector= config_dict["robot_end_effector"]
+
+                self.testbed_name_options= config_dict["testbed_name_options"]
+
+                self.testbed_size = config_dict["testbed_size"]
+
+                self.checkerboard_rows = config_dict["checkerboard_rows_default"]
+                self.checkerboard_cols = config_dict["checkerboard_cols_default"]
+
+                self.aruco_sidelength = config_dict["aruco_sidelength"]
+                self.aruco_dict_used = config_dict["aruco_dict_used"]
+                self.aruco_ids= config_dict["aruco_ids"]
+            
+            rospy.set_param("calibration_config", config_dict)
+
+        except Exception as ex:
+            rospy.loginfo("GUI - COULD NOT LOAD " + filepath + " with exception " + str(ex))
+
     
     def log_all_info(self):
         rospy.loginfo("GUI - camera_matrix: {0}".format(self.camera_matrix))
@@ -154,6 +222,22 @@ class CalibrationGUI(Plugin):
         rospy.loginfo("GUI - camera_transform_matrix_step: {0}".format(self.camera_transform_matrix_step))
         rospy.loginfo("GUI - arm_transform_matrix: {0}".format(self.arm_transform_matrix))
         rospy.loginfo("GUI - arm_transform_matrix_step: {0}".format(self.arm_transform_matrix_step))
+
+
+    def get_z_dist_from_camera_transform_matrix(self):
+        try:
+            z = 0
+            if len(self.camera_transform_matrix) > 0:
+                if self.camera_transform_matrix_step == 4:
+                    z = self.camera_transform_matrix[-5]
+                elif self.camera_transform_matrix_step == 3:
+                    z = self.camera_transform_matrix[-1]
+
+            return z
+        except Exception as ex:
+            print(ex)
+            self.create_error_dialog("Could not get z dist from camera transform matrix with exception: " + str(ex))
+            return 0
 
     # Updating z dist manually
     def update_z_dist_in_camera_matrices(self, new_z):
@@ -271,8 +355,8 @@ class CalibrationGUI(Plugin):
 
     # Updates what is greyed out
     def update_enabled(self):
-        self._widget.camTable.setEnabled(self.is_testbed_selected and self.is_arm_selected and (not self.is_import_calib_clicked))
-        self._widget.importCamButton.setEnabled(self.is_testbed_selected and self.is_arm_selected)
+        self._widget.camTable.setEnabled(not self.is_import_calib_clicked)
+        self._widget.importCamButton.setEnabled(not self.is_import_calib_clicked)
 
         self._widget.pictureButton.setEnabled(self.is_camera_selected and (not self.is_camera_calibration_imported) and (not self.is_internal_camera_calibrated) and (not self.is_import_calib_clicked))
 
@@ -310,6 +394,13 @@ class CalibrationGUI(Plugin):
     ####################################################################################
     ### GUI Event handlers
     ####################################################################################
+    def handle_cb_rows_spinbox_changed(self, new_value):
+        self.checkerboard_rows = new_value
+        print("checkerboard rows: " + str(self.checkerboard_rows))
+
+    def handle_cb_cols_spinbox_changed(self, new_value):
+        self.checkerboard_cols = new_value
+        print("checkerboard rows: " + str(self.checkerboard_cols))
 
     def handle_import_calib_clicked(self):
         print("importing calibration settings")
@@ -423,7 +514,8 @@ class CalibrationGUI(Plugin):
             self.camera_matrix_step = response.camera_matrix_step
             self.camera_transform_matrix = response.transform_matrix
             self.camera_transform_matrix_step = response.transform_matrix_step
-
+            
+            self.z_dist = self.get_z_dist_from_camera_transform_matrix()
             self._widget.zDistFoundLabel.setText("Z Distance Found: "+ str(self.z_dist))
 
             self.is_camera_pose_calibrated = True
@@ -442,12 +534,15 @@ class CalibrationGUI(Plugin):
 
     def handle_initial_guess_x_spinbox_change(self, new_value):
         self.arm_initial_guess[0] = new_value
+        print(self.arm_initial_guess)
 
     def handle_initial_guess_y_spinbox_change(self, new_value):
         self.arm_initial_guess[1] = new_value
+        print(self.arm_initial_guess)
 
     def handle_initial_guess_z_spinbox_change(self, new_value):
         self.arm_initial_guess[2] = new_value
+        print(self.arm_initial_guess)
 
     def handle_testbed_change(self, i):
         if i != 0:
