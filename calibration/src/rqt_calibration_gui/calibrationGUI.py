@@ -207,6 +207,8 @@ class CalibrationGUI(Plugin):
                 self.aruco_sidelength = config_dict["aruco_sidelength"]
                 self.aruco_dict_used = config_dict["aruco_dict_used"]
                 self.aruco_ids= config_dict["aruco_ids"]
+            
+            rospy.set_param("calibration_config", config_dict)
 
         except Exception as ex:
             rospy.loginfo("GUI - COULD NOT LOAD " + filepath + " with exception " + str(ex))

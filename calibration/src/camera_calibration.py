@@ -76,7 +76,7 @@ class CameraCalibration:
         while self.take_picture_1 == False:
             self.rate.sleep()
         #should return an error message if something went wrong, and a boolean signifying success or failure
-        return TriggerResponse(success=True, message="Hey, roger that; we'll be right there!")
+        return TriggerResponse(success=True, message="SUCCESS")
         #return self.picture_error_1, str(self.picture_error_1)
 
     #corresponds to camera1, multiple camera support will come later
@@ -103,6 +103,18 @@ class CameraCalibration:
 
     def camera_calibration_srv_callback(self, request):
         # initialize some empty lists and matrix sizes
+        if rospy.has_param("calibration_config"): 
+            #USE THESE VALUES HOWEVER YOU WANT
+            config = rospy.get_param("calibration_config")
+            checkerboard_rows = config["checkerboard_rows_default"]
+            checkerboard_cols = config["checkerboard_cols_default"]
+            aruco_sidelength = config["aruco_sidelength"]
+            aruco_dict_used = config["aruco_dict_used"]
+            aruco_ids = config["aruco_ids"]
+        else:
+            #PUT DEFAULTS FOR VARS ABOVE HERE ADAM
+            rospy.loginfo("CALIBRATION CONFIG NOT FOUND")
+
         distortion = []
         camera_matrix = []
         transform_matrix = []
