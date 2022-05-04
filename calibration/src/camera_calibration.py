@@ -15,17 +15,7 @@ from calibration.srv import CameraCalibrationSRV, CameraCalibrationSRVResponse
 
 
 # Constants defined
-boardX = 9 # how many squares are on the checkerboard in the x direction
-boardY = 6 # how many squares are on the checkerboard in the y direction
 criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001) # termination criteria
-arucoSideLength = 0.036 # 3.6 cm is the size of our arucos
-arucoDictName = "DICT_5X5_1000" # dictionary name we're using, switch to user input at some point?
-# map of possible aruco dictionaries
-
-topLeftID = 11
-topRightID = 12
-botLeftID = 10
-botRightID = 13
 
 ARUCO_DICT = {
   "DICT_4X4_50": cv.aruco.DICT_4X4_50,
@@ -62,6 +52,20 @@ class CameraCalibration:
         #Ensures only 1 picture is taken
         self.take_picture_1 = False
         self.picture_error_1 = False
+
+        # camera calibration config variables
+
+        self.arucoSideLength = 0.036 # 3.6 cm is the size of our arucos
+        self.arucoDictName = "DICT_5X5_1000" # dictionary name we're using, switch to user input at some point?
+        # map of possible aruco dictionaries
+
+        self.topLeftID = 11
+        self.topRightID = 12
+        self.botLeftID = 10
+        self.botRightID = 13
+
+        self.boardX = 9 # how many squares are on the checkerboard in the x direction
+        self.boardY = 6 # how many squares are on the checkerboard in the y direction
 
         #Subscribes to camera feed
         self.camera_sub_1 = rospy.Subscriber("camera_1/image_raw", Image, self.camera_1_callback, queue_size=1)
@@ -103,17 +107,20 @@ class CameraCalibration:
 
     def camera_calibration_srv_callback(self, request):
         # initialize some empty lists and matrix sizes
-        if rospy.has_param("calibration_config"): 
-            #USE THESE VALUES HOWEVER YOU WANT
+        if rospy.has_param("calibration_config"):
+            # override camera config variables
             config = rospy.get_param("calibration_config")
-            checkerboard_rows = config["checkerboard_rows_default"]
-            checkerboard_cols = config["checkerboard_cols_default"]
-            aruco_sidelength = config["aruco_sidelength"]
-            aruco_dict_used = config["aruco_dict_used"]
-            aruco_ids = config["aruco_ids"]
+            self.boardY = config["checkerboard_rows_default"]
+            self.boardX = config["checkerboard_cols_default"]
+            self.arucoSideLength = config["aruco_sidelength"]
+            self.arucoDictName = config["aruco_dict_used"]
+            self.topLeftID = config["aruco_ids"][0]
+            self.topRightID = config["aruco_ids"][1]
+            self.botLeftID = config["aruco_ids"][2]
+            self.botRightID = config["aruco_ids"][3]
         else:
-            #PUT DEFAULTS FOR VARS ABOVE HERE ADAM
-            rospy.loginfo("CALIBRATION CONFIG NOT FOUND")
+            # using default values defined above
+            rospy.loginfo("CALIBRATION CONFIG NOT FOUND, USING DEFAULT VALUES")
 
         distortion = []
         camera_matrix = []
@@ -156,8 +163,8 @@ class CameraCalibration:
         rospy.loginfo("CAMERA CALIBRATION - Calibrating camera")
         # let's start calibrating
         # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
-        objp = np.zeros((boardX*boardY,3), np.float32)
-        objp[:,:2] = np.mgrid[0:boardY,0:boardX].T.reshape(-1,2)
+        objp = np.zeros((self.boardX*self.boardY,3), np.float32)
+        objp[:,:2] = np.mgrid[0:self.boardY,0:self.boardX].T.reshape(-1,2)
         # Arrays to store object points and image points from all the images.
         objpoints = [] # 3d point in real world space
         imgpoints = [] # 2d points in image plane.
@@ -167,7 +174,7 @@ class CameraCalibration:
             # get a grey scale version of the image
             gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
             # Find the chess board corners
-            ret, corners = cv.findChessboardCorners(gray, (boardY,boardX), None)
+            ret, corners = cv.findChessboardCorners(gray, (self.boardY,self.boardX), None)
             # If found, add object points, image points (after refining them)
             rospy.loginfo("CAMERA CALIBRATION - Image return val: {0}".format(ret))
             if ret == True:
@@ -197,12 +204,12 @@ class CameraCalibration:
             rospy.loginfo("CAMERA CALIBRATION - No aruco photo found !!")
         else:
             gray = cv.cvtColor(self.aruco_photo, cv.COLOR_BGR2GRAY)
-            ret, corners = cv.findChessboardCorners(gray, (boardY,boardX), None)
+            ret, corners = cv.findChessboardCorners(gray, (self.boardY,self.boardX), None)
 
             if ret == True:
                 rospy.loginfo("CAMERA CALIBRATION - Checkerboard found on table")
-                objp = np.zeros((boardX*boardY,3), np.float32)
-                objp[:,:2] = np.mgrid[0:boardY,0:boardX].T.reshape(-1,2)
+                objp = np.zeros((self.boardX*self.boardY,3), np.float32)
+                objp[:,:2] = np.mgrid[0:self.boardY,0:self.boardX].T.reshape(-1,2)
                 corners2 = cv.cornerSubPix(gray,corners,(11,11),(-1,-1),criteria)
 
                 # Find the rotation and translation vectors.
@@ -222,7 +229,7 @@ class CameraCalibration:
     def calibrate_arucos(self, distortion, camera_matrix, height):
         rospy.loginfo("CAMERA CALIBRATION - Final steps, pray to god this works")
         transform_matrix = []
-        arucoDict = cv.aruco.Dictionary_get(ARUCO_DICT[arucoDictName])
+        arucoDict = cv.aruco.Dictionary_get(ARUCO_DICT[self.arucoDictName])
         arucoParams = cv.aruco.DetectorParameters_create()
 
         if self.aruco_photo is None:
@@ -241,7 +248,7 @@ class CameraCalibration:
                 # Get the rotation and translation vectors
                 rvecs, tvecs = cv.aruco.estimatePoseSingleMarkers(
                     corners,
-                    arucoSideLength,
+                    self.arucoSideLength,
                     camera_matrix,
                     distortion)
 
@@ -257,13 +264,13 @@ class CameraCalibration:
                     # rospy.loginfo("CAMERA CALIBRATION - Rotation Vector: {0}".format(rvecs[i]))
                     # rospy.loginfo("CAMERA CALIBRATION - Translation Vector: {0}".format(tvecs[i]))
 
-                    if marker_id == topLeftID:
+                    if marker_id == self.topLeftID:
                         topLeftT = tvecs[i][0]
-                    elif marker_id == topRightID:
+                    elif marker_id == self.topRightID:
                         topRightT = tvecs[i][0]
-                    elif marker_id == botLeftID:
+                    elif marker_id == self.botLeftID:
                         botLeftT = tvecs[i][0]
-                    elif marker_id == botRightID:
+                    elif marker_id == self.botRightID:
                         botRightT = tvecs[i][0]
 
                     # uncomment to draw axis on image, again not sure how this will work with how we're saving images
