@@ -3,6 +3,7 @@
 import rospy
 import sys
 import numpy as np
+import tf
 
 from calibration.srv import ArmCalibrationSRV, ArmCalibrationSRVResponse
 from calibration.srv import ArmRecordPointSRV, ArmRecordPointSRVResponse
@@ -53,6 +54,7 @@ class ArmCalibration:
         print(estOriginToBase)
 
         arr_translations = self.__getTranslations(estOriginToBase, tp_data)
+        print(arr_translations)
         
         newMatrix = self.__updateTransMatrix(arr_translations, estOriginToBase)
         
@@ -60,7 +62,7 @@ class ArmCalibration:
         print(newMatrix)
 
         # returns the transform matrix flattened to 1D array
-        return np.array.flatten(newMatrix)
+        return newMatrix.flatten()
 
     # Returns a 1x4 vector containing the XYZ coordinates of the end effector in the world frame.
     def __getEndEffInWorld(self, originToBase, endEffToBase):
@@ -108,12 +110,15 @@ class ArmCalibration:
 
         print("arr_translations[0][:-1] = ")
         print(arr_translations[0][:-1])
-        v_12 = arr_translations[1][:-1] - arr_translations[2][:-1]
-        v_43 = arr_translations[0][:-1] - arr_translations[3][:-1]
+        #v_12 = arr_translations[1][:-1] - arr_translations[2][:-1]
+        #v_43 = arr_translations[0][:-1] - arr_translations[3][:-1] 
+        v_12 = arr_translations[0][:-1] - arr_translations[1][:-1]
+        v_43 = arr_translations[3][:-1] - arr_translations[2][:-1]
         x_vec = (v_12 + v_43) / 2
-
-        v_14 = arr_translations[0][:-1] - arr_translations[1][:-1]
-        v_23 = arr_translations[3][:-1] - arr_translations[2][:-1]
+        #v_14 = arr_translations[0][:-1] - arr_translations[1][:-1]
+        #v_23 = arr_translations[3][:-1] - arr_translations[2][:-1]
+        v_14 = arr_translations[0][:-1] - arr_translations[3][:-1]
+        v_23 = arr_translations[1][:-1] - arr_translations[2][:-1]
         y_vec = (v_14 + v_23) / 2
 
         yp_vec = y_vec - np.dot(x_vec, y_vec) * x_vec
@@ -152,18 +157,27 @@ class ArmCalibration:
 
         inverse_matrix = np.linalg.inv(newMatrix)
 
-        return newMatrix
+        return inverse_matrix
 
         #print(dx, dy, dz)
 
     # Records the end effector location in the world frame. Stores transformation matrix in tp_data.
     def __recordTouchpoint(self, id):
+        if rospy.has_param("calibration_config"): 
+            #USE THESE VALUES HOWEVER YOU WANT
+            config = rospy.get_param("calibration_config")
+            base_frame = config["robot_base_link"]
+            end_effector_frame = config["robot_end_effector"]
+        else:
+            rospy.loginfo("CALIBRATION CONFIG NOT FOUND")
+            base_frame = "j2s7s300_link_base"
+            end_effector_frame = "j2s7s300_end_effector"
 
         listener = tf.TransformListener()
 
         while True:
             try:
-                translation, rotation = listener.lookupTransform('j2s7s300_link_base', 'j2s7s300_end_effector', rospy.Time())
+                translation, rotation = listener.lookupTransform(base_frame, end_effector, rospy.Time())
                 transform_mat = listener.fromTranslationRotation(translation, rotation)
 
                 self.tp_data[id] = transform_mat
@@ -173,8 +187,7 @@ class ArmCalibration:
                 return True
 
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                
-                return False
+                continue
 
 
     def record_touchpoint_srv_callback(self, request):

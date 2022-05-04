@@ -10,7 +10,7 @@ import tf
 from cv_bridge import CvBridge, CvBridgeError
 
 from sensor_msgs.msg import Image
-from std_srvs.srv import Trigger
+from std_srvs.srv import Trigger, TriggerResponse
 from calibration.srv import CameraCalibrationSRV, CameraCalibrationSRVResponse
 
 
@@ -76,7 +76,8 @@ class CameraCalibration:
         while self.take_picture_1 == False:
             self.rate.sleep()
         #should return an error message if something went wrong, and a boolean signifying success or failure
-        return self.picture_error_1, str(self.picture_error_1)
+        return TriggerResponse(success=True, message="SUCCESS")
+        #return self.picture_error_1, str(self.picture_error_1)
 
     #corresponds to camera1, multiple camera support will come later
     def camera_1_callback(self, msg):
@@ -92,15 +93,28 @@ class CameraCalibration:
             # now that we have opencv image, check if this should be added to camera calibration list (we haven't taken 30 photos yet)
             if len(self.camera_photos) < 30:
                 self.camera_photos.append(image)
-            # if we taken all of our calibration photos, write image to our special aruco photo (photo has checkerboard on table and arucos in frame, or height is provided)
+           # if we taken all of our calibration photos, write image to our special aruco photo (photo has checkerboard on table and arucos in frame, or height is provided)
             else:
                 self.aruco_photo = image
+            print(self.camera_photos)
 
             self.picture_error_1 = False
             self.take_picture_1 = False
 
     def camera_calibration_srv_callback(self, request):
         # initialize some empty lists and matrix sizes
+        if rospy.has_param("calibration_config"): 
+            #USE THESE VALUES HOWEVER YOU WANT
+            config = rospy.get_param("calibration_config")
+            checkerboard_rows = config["checkerboard_rows_default"]
+            checkerboard_cols = config["checkerboard_cols_default"]
+            aruco_sidelength = config["aruco_sidelength"]
+            aruco_dict_used = config["aruco_dict_used"]
+            aruco_ids = config["aruco_ids"]
+        else:
+            #PUT DEFAULTS FOR VARS ABOVE HERE ADAM
+            rospy.loginfo("CALIBRATION CONFIG NOT FOUND")
+
         distortion = []
         camera_matrix = []
         transform_matrix = []
@@ -109,6 +123,8 @@ class CameraCalibration:
         height = 0
 
         if request.existing_settings:
+            print(self.camera_photos)
+            self.aruco_photo = self.camera_photos[0]
             distortion = request.distortion
             camera_matrix = request.camera_matrix
             camera_matrix = np.array([ [camera_matrix[0],camera_matrix[1],camera_matrix[2]], [camera_matrix[3],camera_matrix[4],camera_matrix[5]], [camera_matrix[6],camera_matrix[7],camera_matrix[8]] ])
@@ -211,6 +227,7 @@ class CameraCalibration:
 
         if self.aruco_photo is None:
             rospy.loginfo("CAMERA CALIBRATION - No aruco photo found !!")
+            transform_matrix = np.array([])
         else:
             # Detect ArUco markers in the video frame
             (corners, markerIDs, rejected) = cv.aruco.detectMarkers(self.aruco_photo, arucoDict, parameters=arucoParams)
