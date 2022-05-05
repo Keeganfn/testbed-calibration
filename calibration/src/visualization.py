@@ -39,6 +39,7 @@ class VisualizeResult:
             #USE THESE VALUES HOWEVER YOU WANT
             config = rospy.get_param("calibration_config")
             self.BASE_FRAME = config["robot_base_link"]
+            print(self.BASE_FRAME)
             self.TESTBED_L = config["testbed_size"][0]
             self.TESTBED_W = config["testbed_size"][1]
         else:
@@ -69,10 +70,10 @@ class VisualizeResult:
         testbed_frame.transform.translation.x = self.testbed_translation[0]
         testbed_frame.transform.translation.y = self.testbed_translation[1]
         testbed_frame.transform.translation.z = self.testbed_translation[2]
-        testbed_frame.transform.rotation.x = self.testbed_rotation[0]
-        testbed_frame.transform.rotation.y = self.testbed_rotation[1]
-        testbed_frame.transform.rotation.z = self.testbed_rotation[2]
-        testbed_frame.transform.rotation.w = self.testbed_rotation[3]
+        testbed_frame.transform.rotation.x = self.testbed_rotation[1]
+        testbed_frame.transform.rotation.y = self.testbed_rotation[2]
+        testbed_frame.transform.rotation.z = self.testbed_rotation[3]
+        testbed_frame.transform.rotation.w = self.testbed_rotation[0]
         tfm = tf2_msgs.msg.TFMessage([testbed_frame])
         self.tf_pub.publish(tfm)
 
@@ -85,10 +86,10 @@ class VisualizeResult:
         camera_frame.transform.translation.x = self.camera_translation[0]
         camera_frame.transform.translation.y = self.camera_translation[1]
         camera_frame.transform.translation.z = self.camera_translation[2]
-        camera_frame.transform.rotation.x = self.camera_rotation[0]
-        camera_frame.transform.rotation.y = self.camera_rotation[1]
-        camera_frame.transform.rotation.z = self.camera_rotation[2]
-        camera_frame.transform.rotation.w = self.camera_rotation[3]
+        camera_frame.transform.rotation.x = self.camera_rotation[1]
+        camera_frame.transform.rotation.y = self.camera_rotation[2]
+        camera_frame.transform.rotation.z = self.camera_rotation[3]
+        camera_frame.transform.rotation.w = self.camera_rotation[0]
         tfm = tf2_msgs.msg.TFMessage([camera_frame])
         self.tf_pub.publish(tfm)
 

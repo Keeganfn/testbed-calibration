@@ -18,6 +18,30 @@ class ArmCalibration:
         self.calibration_result_service = rospy.Service("arm_calibration_srv", ArmCalibrationSRV, self.arm_calibration_srv_callback)
 
         self.tp_data = dict()
+        self.tp0 = [[-0.95854819, -0.02209967, 0.28407211, 0.39862926],
+                    [ 0.28276544, 0.04888842, 0.95794239, 0.30330957],
+                    [-0.03505804, 0.99855973, -0.04061288, -0.00940389],
+                    [0.0,0.0,0.0,1.0]]
+        self.tp1 = [[ -.798993929, .000755620500, .601338616, .795417815],
+                    [  .600438779, .0557026416, .797728330, .323572156],
+                    [ -.0328933695, .0998447117, -.0449597763, -.0131945482],
+                    [  0.0, 0.0, 0.0, 1.0]]
+        self.tp2 = [[-0.10733791,  0.14273393,  0.98392357,  0.81739647],
+                    [ 0.98651213,  0.13830229,  0.08755733, -0.27427378],
+                    [-0.12358148,  0.98005076, -0.15565384, -0.02225972],
+                    [0.0,0.0,0.0,1.0]]
+        self.tp3 = [[ 0.16823087,  0.17619686,  0.96987269,  0.41746188],
+                    [ 0.97797333,  0.0934925,  -0.18662077, -0.28640786],
+                    [-0.12355782,  0.979905,   -0.15658751, -0.01630057],
+                    [0.0,0.0,0.0,1.0]]
+
+        self.tp_data[0] = self.tp0
+        self.tp_data[1] = self.tp1
+        self.tp_data[2] = self.tp2
+        self.tp_data[3] = self.tp3
+
+
+
 
 
     # *******************************************************************************************
@@ -39,9 +63,14 @@ class ArmCalibration:
     # *******************************************************************************************
     def calibrate_arm(self, tp_data, initial_guess):
         
-        x = initial_guess[0] or -.597
-        y = initial_guess[1] or 0
-        z = initial_guess[2] or .035
+        #x = initial_guess[0] or -.597
+        #y = initial_guess[1] or 0
+        #z = initial_guess[2] or .035
+
+
+        x = initial_guess[0]
+        y = initial_guess[1]
+        z = initial_guess[2]
 
         # Estimated Transformation Matrix: Origin -> Robot arm Base
         estOriginToBase = np.array([
@@ -121,13 +150,15 @@ class ArmCalibration:
         v_23 = arr_translations[1][:-1] - arr_translations[2][:-1]
         y_vec = (v_14 + v_23) / 2
 
+        #xp_vec = x_vec - np.dot(x_vec, y_vec) * y_vec
         yp_vec = y_vec - np.dot(x_vec, y_vec) * x_vec
 
-
+        #z_vec = np.cross(y_vec, xp_vec)
         z_vec = np.cross(x_vec, yp_vec)
 
         rotationMatrix = np.identity(4)
 
+        #rotationMatrix[0][:-1] = xp_vec / np.linalg.norm(xp_vec)
         rotationMatrix[0][:-1] = x_vec / np.linalg.norm(x_vec)
         rotationMatrix[1][:-1] = yp_vec / np.linalg.norm(yp_vec)
         rotationMatrix[2][:-1] = z_vec / np.linalg.norm(z_vec)
@@ -156,28 +187,32 @@ class ArmCalibration:
         print(newMatrix)
 
         inverse_matrix = np.linalg.inv(newMatrix)
-
+        #inverse_matrix = newMatrix
         return inverse_matrix
 
         #print(dx, dy, dz)
 
     # Records the end effector location in the world frame. Stores transformation matrix in tp_data.
     def __recordTouchpoint(self, id):
+        return True
         if rospy.has_param("calibration_config"): 
             #USE THESE VALUES HOWEVER YOU WANT
             config = rospy.get_param("calibration_config")
             base_frame = config["robot_base_link"]
             end_effector_frame = config["robot_end_effector"]
+            print(end_effector_frame)
+            print(base_frame)
         else:
             rospy.loginfo("CALIBRATION CONFIG NOT FOUND")
             base_frame = "j2s7s300_link_base"
             end_effector_frame = "j2s7s300_end_effector"
+            print("HERHELRHELSRHLSEKRHLERKH")
 
         listener = tf.TransformListener()
 
         while True:
             try:
-                translation, rotation = listener.lookupTransform(base_frame, end_effector, rospy.Time())
+                translation, rotation = listener.lookupTransform(base_frame, end_effector_frame, rospy.Time())
                 transform_mat = listener.fromTranslationRotation(translation, rotation)
 
                 self.tp_data[id] = transform_mat
