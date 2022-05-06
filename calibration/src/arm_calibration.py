@@ -40,6 +40,9 @@ class ArmCalibration:
         self.tp_data[2] = self.tp2
         self.tp_data[3] = self.tp3
 
+        print("Calling calibrate_arm:")
+        #self.calibrate_arm(self.tp_data, [0.6,0,0])
+
 
 
 
@@ -68,9 +71,9 @@ class ArmCalibration:
         #z = initial_guess[2] or .035
 
 
-        x = initial_guess[0]
-        y = initial_guess[1]
-        z = initial_guess[2]
+        x = initial_guess[0] or 0
+        y = initial_guess[1] or 0
+        z = initial_guess[2] or 0
 
         # Estimated Transformation Matrix: Origin -> Robot arm Base
         estOriginToBase = np.array([
@@ -105,9 +108,10 @@ class ArmCalibration:
     def __getTranslations(self, originToBase, tp_data):
         
         arr_endEffInWorld = []
-
+        
         for i in range(0, len(tp_data)):
-            endEffCoords = self.__getEndEffInWorld(originToBase, tp_data[i])
+            #endEffCoords = self.__getEndEffInWorld(originToBase, tp_data[i])
+            endEffCoords = np.array([tp_data[i][0][-1], tp_data[i][1][-1], tp_data[i][2][-1], 1])
             arr_endEffInWorld.append(endEffCoords)
 
         return arr_endEffInWorld
@@ -139,15 +143,15 @@ class ArmCalibration:
 
         print("arr_translations[0][:-1] = ")
         print(arr_translations[0][:-1])
-        #v_12 = arr_translations[1][:-1] - arr_translations[2][:-1]
-        #v_43 = arr_translations[0][:-1] - arr_translations[3][:-1] 
-        v_12 = arr_translations[0][:-1] - arr_translations[1][:-1]
-        v_43 = arr_translations[3][:-1] - arr_translations[2][:-1]
+        #v_12 = arr_translations[2][:-1] - arr_translations[1][:-1]
+        #v_43 = arr_translations[3][:-1] - arr_translations[0][:-1] 
+        v_12 = arr_translations[1][:-1] - arr_translations[0][:-1]
+        v_43 = arr_translations[2][:-1] - arr_translations[3][:-1]
         x_vec = (v_12 + v_43) / 2
-        #v_14 = arr_translations[0][:-1] - arr_translations[1][:-1]
-        #v_23 = arr_translations[3][:-1] - arr_translations[2][:-1]
-        v_14 = arr_translations[0][:-1] - arr_translations[3][:-1]
-        v_23 = arr_translations[1][:-1] - arr_translations[2][:-1]
+        #v_14 = arr_translations[1][:-1] - arr_translations[0][:-1]
+        #v_23 = arr_translations[2][:-1] - arr_translations[3][:-1]
+        v_14 = arr_translations[3][:-1] - arr_translations[0][:-1]
+        v_23 = arr_translations[2][:-1] - arr_translations[1][:-1]
         y_vec = (v_14 + v_23) / 2
 
         #xp_vec = x_vec - np.dot(x_vec, y_vec) * y_vec
@@ -158,6 +162,11 @@ class ArmCalibration:
 
         rotationMatrix = np.identity(4)
 
+        rot = np.array([[0,-1,0,0],
+                        [1,0,0,0],
+                        [0,0,1,0],
+                        [0,0,0,1]])
+
         #rotationMatrix[0][:-1] = xp_vec / np.linalg.norm(xp_vec)
         rotationMatrix[0][:-1] = x_vec / np.linalg.norm(x_vec)
         rotationMatrix[1][:-1] = yp_vec / np.linalg.norm(yp_vec)
@@ -166,32 +175,33 @@ class ArmCalibration:
         print("Rotation Matrix: ")
         print(rotationMatrix)
 
+        scuffed_matrix = np.matmul(rotationMatrix,rot)
+
         return rotationMatrix
 
 
     # Calibrates the original guess transformation matrix and returns the updated matrix.
     def __updateTransMatrix(self, arr_translations, oldMatrix):
 
-        print("Before Calibrating Translation Portion: ")
-        print(arr_translations)
-
         (dx, dy, dz) = self.__calibrateTranslations(arr_translations)
 
         newMatrix = self.__calibrateRotations(arr_translations)
 
-        newMatrix[0][-1] = oldMatrix[0][-1] - dx
-        newMatrix[1][-1] = oldMatrix[1][-1] - dy
-        newMatrix[2][-1] = oldMatrix[2][-1] - dz
+        newMatrix[0][-1] = dx
+        newMatrix[1][-1] = dy
+        newMatrix[2][-1] = dz
 
         print("Calibrated Matrix before Inverse:")
         print(newMatrix)
 
         inverse_matrix = np.linalg.inv(newMatrix)
         #inverse_matrix = newMatrix
-        return inverse_matrix
+        return newMatrix
+        #return inverse_matrix
 
         #print(dx, dy, dz)
 
+    
     # Records the end effector location in the world frame. Stores transformation matrix in tp_data.
     def __recordTouchpoint(self, id):
         return True
@@ -240,7 +250,7 @@ class ArmCalibration:
 
 
     def arm_calibration_srv_callback(self, request):
-        rospy.loginfo("ARM ESTIMATED LOCATION: {0} {1} {2}".format(request.x, request.y, request.z))
+        #rospy.loginfo("ARM ESTIMATED LOCATION: {0} {1} {2}".format(request.x, request.y, request.z))
         #request contains the estimated location given by the user
         initial_guess = [request.x, request.y, request.z]
         
@@ -252,10 +262,12 @@ class ArmCalibration:
 
         #transform_matrix = [1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4]
         return ArmCalibrationSRVResponse(transform_matrix_step, transform_matrix)
-
+    
 
 if __name__ == "__main__":
     #initializes node and keeps spinning until roscore is shutdown
     rospy.init_node("arm_calibration", argv=sys.argv)
     calibrate = ArmCalibration()
+
+
     rospy.spin()
