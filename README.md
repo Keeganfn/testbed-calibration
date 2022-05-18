@@ -18,3 +18,28 @@ If anything breaks, run:<br>
 and rebuild the workspace again<br>
 <code>catkin build</code>
 
+
+
+
+<h2>GUI</h2>
+
+### Important Files:
+
+- ```calibration/resource/calibration.ui``` – the actual interface
+- ```calibration/src/rqt_calibration_gui/calibrationGUI.py``` – functionality of the interface
+
+```calibrationGUI.py``` is where all the components of the project come together. This contains the code that calls the camera calibration, arm calibration, and RViz visualization. 
+
+### Making Changes
+When making changes to the GUI, use [QtDesigner](https://build-system.fman.io/qt-designer-download)  to add, update, or delete GUI elements in ```calibration.ui```. 
+
+The names in the object inspector (top right) are editable and correspond to how you access these elements in calibrationGUI.py.
+
+**Ex.** to access the element with the name *pictureButton* in ```CalibrationGUI.py``` use ```self._widget.pictureButton```
+
+**Ex.** To add an event handler on click, refer to the following code:
+<code>self._widget.pictureButton.clicked[bool].connect(self.handle_take_picture_clicked)</code>
+
+For more information about widgets, widget properties, widget functions, etc… Refer to the qt documentation for python 2 here:
+https://doc.qt.io/qtforpython-5/PySide2/QtWidgets/index.html 
+
