@@ -33,13 +33,14 @@ and rebuild the workspace again<br>
 ### Making Changes
 When making changes to the GUI, use [QtDesigner](https://build-system.fman.io/qt-designer-download)  to add, update, or delete GUI elements in ```calibration.ui```. 
 
-The names in the object inspector (top right) are editable and correspond to how you access these elements in calibrationGUI.py.
+The names in the object inspector (top right) are editable and correspond to how you access these elements in ```calibrationGUI.py```.
 
-**Ex.** to access the element with the name *pictureButton* in ```CalibrationGUI.py``` use ```self._widget.pictureButton```
+- **Ex.** to access the element with the name *pictureButton* in ```CalibrationGUI.py``` use ```self._widget.pictureButton```
 
-**Ex.** To add an event handler on click, refer to the following code:
+- **Ex.** To add an event handler on click, refer to the following code:
 <code>self._widget.pictureButton.clicked[bool].connect(self.handle_take_picture_clicked)</code>
+
+To update when widgets are grayed out, refer to the function ```self.update_enabled()```. This function enables/disables widgets based on the state of the GUI i.e. different variables set to true/false. Make sure to call this function after an event sets an important boolean variable.
 
 For more information about widgets, widget properties, widget functions, etc… Refer to the qt documentation for python 2 here:
 https://doc.qt.io/qtforpython-5/PySide2/QtWidgets/index.html 
-
