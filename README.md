@@ -27,6 +27,7 @@ and rebuild the workspace again<br>
 
 - ```calibration/resource/calibration.ui``` – the actual interface
 - ```calibration/src/rqt_calibration_gui/calibrationGUI.py``` – functionality of the interface
+- ```calibration/src/config.json``` – configuration file for testbed, robot arm, aruco and checkerboard options
 
 ```calibrationGUI.py``` is where all the components of the project come together. This contains the code that calls the camera calibration, arm calibration, and RViz visualization. 
 
