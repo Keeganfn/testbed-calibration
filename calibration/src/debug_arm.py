@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 
-import rospy
+#import rospy
 import sys
 import numpy as np
 import tf
 
-from calibration.srv import ArmCalibrationSRV, ArmCalibrationSRVResponse
-from calibration.srv import ArmRecordPointSRV, ArmRecordPointSRVResponse
+#from calibration.srv import ArmCalibrationSRV, ArmCalibrationSRVResponse
+#from calibration.srv import ArmRecordPointSRV, ArmRecordPointSRVResponse
 
 
 class ArmCalibration:
 
     def __init__(self):
         #Service for record touchpoint
-        self.touchpoint_service = rospy.Service("record_touchpoint_srv", ArmRecordPointSRV, self.record_touchpoint_srv_callback)
+        #self.touchpoint_service = rospy.Service("record_touchpoint_srv", ArmRecordPointSRV, self.record_touchpoint_srv_callback)
         #service for arm calibration
-        self.calibration_result_service = rospy.Service("arm_calibration_srv", ArmCalibrationSRV, self.arm_calibration_srv_callback)
+        #self.calibration_result_service = rospy.Service("arm_calibration_srv", ArmCalibrationSRV, self.arm_calibration_srv_callback)
 
         self.tp_data = dict()
         self.tp0 = [[-0.95854819, -0.02209967, 0.28407211, 0.39862926],
@@ -41,7 +41,7 @@ class ArmCalibration:
         self.tp_data[3] = self.tp3
 
         print("Calling calibrate_arm:")
-        #self.calibrate_arm(self.tp_data, [0.6,0,0])
+        self.calibrate_arm(self.tp_data, [0.6,0,0])
 
 
 
@@ -71,9 +71,9 @@ class ArmCalibration:
         #z = initial_guess[2] or .035
 
 
-        x = initial_guess[0] or 0
-        y = initial_guess[1] or 0
-        z = initial_guess[2] or 0
+        x = initial_guess[0]
+        y = initial_guess[1]
+        z = initial_guess[2]
 
         # Estimated Transformation Matrix: Origin -> Robot arm Base
         estOriginToBase = np.array([
@@ -143,15 +143,15 @@ class ArmCalibration:
 
         print("arr_translations[0][:-1] = ")
         print(arr_translations[0][:-1])
-        #v_12 = arr_translations[2][:-1] - arr_translations[1][:-1]
-        #v_43 = arr_translations[3][:-1] - arr_translations[0][:-1] 
-        v_12 = arr_translations[1][:-1] - arr_translations[0][:-1]
-        v_43 = arr_translations[2][:-1] - arr_translations[3][:-1]
+        #v_12 = arr_translations[1][:-1] - arr_translations[2][:-1]
+        #v_43 = arr_translations[0][:-1] - arr_translations[3][:-1] 
+        v_12 = arr_translations[0][:-1] - arr_translations[1][:-1]
+        v_43 = arr_translations[3][:-1] - arr_translations[2][:-1]
         x_vec = (v_12 + v_43) / 2
-        #v_14 = arr_translations[1][:-1] - arr_translations[0][:-1]
-        #v_23 = arr_translations[2][:-1] - arr_translations[3][:-1]
-        v_14 = arr_translations[3][:-1] - arr_translations[0][:-1]
-        v_23 = arr_translations[2][:-1] - arr_translations[1][:-1]
+        #v_14 = arr_translations[0][:-1] - arr_translations[1][:-1]
+        #v_23 = arr_translations[3][:-1] - arr_translations[2][:-1]
+        v_14 = arr_translations[0][:-1] - arr_translations[3][:-1]
+        v_23 = arr_translations[1][:-1] - arr_translations[2][:-1]
         y_vec = (v_14 + v_23) / 2
 
         #xp_vec = x_vec - np.dot(x_vec, y_vec) * y_vec
@@ -162,11 +162,6 @@ class ArmCalibration:
 
         rotationMatrix = np.identity(4)
 
-        rot = np.array([[0,-1,0,0],
-                        [1,0,0,0],
-                        [0,0,1,0],
-                        [0,0,0,1]])
-
         #rotationMatrix[0][:-1] = xp_vec / np.linalg.norm(xp_vec)
         rotationMatrix[0][:-1] = x_vec / np.linalg.norm(x_vec)
         rotationMatrix[1][:-1] = yp_vec / np.linalg.norm(yp_vec)
@@ -174,8 +169,6 @@ class ArmCalibration:
 
         print("Rotation Matrix: ")
         print(rotationMatrix)
-
-        scuffed_matrix = np.matmul(rotationMatrix,rot)
 
         return rotationMatrix
 
@@ -194,14 +187,13 @@ class ArmCalibration:
         print("Calibrated Matrix before Inverse:")
         print(newMatrix)
 
-        inverse_matrix = np.linalg.inv(newMatrix)
+        #inverse_matrix = np.linalg.inv(newMatrix)
         #inverse_matrix = newMatrix
         return newMatrix
-        #return inverse_matrix
 
         #print(dx, dy, dz)
 
-    
+    '''
     # Records the end effector location in the world frame. Stores transformation matrix in tp_data.
     def __recordTouchpoint(self, id):
         return True
@@ -262,12 +254,12 @@ class ArmCalibration:
 
         #transform_matrix = [1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4]
         return ArmCalibrationSRVResponse(transform_matrix_step, transform_matrix)
-    
+    '''
 
 if __name__ == "__main__":
     #initializes node and keeps spinning until roscore is shutdown
-    rospy.init_node("arm_calibration", argv=sys.argv)
+    #rospy.init_node("arm_calibration", argv=sys.argv)
     calibrate = ArmCalibration()
 
 
-    rospy.spin()
+    #rospy.spin()
