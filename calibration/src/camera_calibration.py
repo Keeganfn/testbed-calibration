@@ -55,6 +55,7 @@ class CameraCalibration:
 
         # camera calibration config variables
 
+        self.checkerboardSquareLength = 0.025
         self.arucoSideLength = 0.036 # 3.6 cm is the size of our arucos
         self.arucoDictName = "DICT_5X5_1000" # dictionary name we're using, switch to user input at some point?
         # map of possible aruco dictionaries
@@ -112,6 +113,7 @@ class CameraCalibration:
             config = rospy.get_param("calibration_config")
             self.boardY = config["checkerboard_rows_default"]
             self.boardX = config["checkerboard_cols_default"]
+            # self.checkerboardSquareLength = config["checkerboard_square_side_length"]
             self.arucoSideLength = config["aruco_sidelength"]
             self.arucoDictName = config["aruco_dict_used"]
             self.topLeftID = config["aruco_ids"][0]
@@ -164,7 +166,7 @@ class CameraCalibration:
         # let's start calibrating
         # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
         objp = np.zeros((self.boardX*self.boardY,3), np.float32)
-        objp[:,:2] = np.mgrid[0:self.boardY,0:self.boardX].T.reshape(-1,2)
+        objp[:,:2] = np.mgrid[0:self.boardY,0:self.boardX].T.reshape(-1,2)*self.checkerboardSquareLength
         # Arrays to store object points and image points from all the images.
         objpoints = [] # 3d point in real world space
         imgpoints = [] # 2d points in image plane.
@@ -209,7 +211,7 @@ class CameraCalibration:
             if ret == True:
                 rospy.loginfo("CAMERA CALIBRATION - Checkerboard found on table")
                 objp = np.zeros((self.boardX*self.boardY,3), np.float32)
-                objp[:,:2] = np.mgrid[0:self.boardY,0:self.boardX].T.reshape(-1,2)
+                objp[:,:2] = np.mgrid[0:self.boardY,0:self.boardX].T.reshape(-1,2)*self.checkerboardSquareLength
                 corners2 = cv.cornerSubPix(gray,corners,(11,11),(-1,-1),criteria)
 
                 # Find the rotation and translation vectors.
@@ -219,7 +221,7 @@ class CameraCalibration:
                 rospy.loginfo("CAMERA CALIBRATION - Found Rotation Vector: {0}".format(rvec))
                 rospy.loginfo("CAMERA CALIBRATION - New Height Value: {0}".format(tvec[2][0] * 0.0254)) # convert from inches to m
 
-                height = tvec[2][0] * 0.0254
+                height = tvec[2][0]
             else:
                 rospy.loginfo("CAMERA CALIBRATION - Couldn't find chessboard for height calculation !!")
         return height
