@@ -66,7 +66,6 @@ class CalibrationGUI(Plugin):
         self.arm_transform_matrix = None
         self.arm_transform_matrix_step = None
         self.z_dist = 0
-        #self.arm_initial_guess = [0,0,0]
 
         self.total_pictures = 0
 
@@ -91,23 +90,12 @@ class CalibrationGUI(Plugin):
         # Z-dist changed manually
         self._widget.zDistSpinBox.valueChanged.connect(self.handle_z_spinbox_change)
 
-        # Initial guesses for arm
-        #self._widget.xSpinBox.valueChanged.connect(self.handle_initial_guess_x_spinbox_change)
-        #self._widget.ySpinBox.valueChanged.connect(self.handle_initial_guess_y_spinbox_change)
-        #self._widget.zSpinBox.valueChanged.connect(self.handle_initial_guess_z_spinbox_change)
-
-        #self._widget.xSpinBox.setMinimum(-10000)
-        #self._widget.ySpinBox.setMinimum(-10000)
-        #self._widget.zSpinBox.setMinimum(-10000)
-
         # Checkerboard rows / cols
         self._widget.rowsSpinBox.valueChanged.connect(self.handle_cb_rows_spinbox_changed)
         self._widget.colsSpinBox.valueChanged.connect(self.handle_cb_cols_spinbox_changed)
 
-
         # Table
         self._widget.camTable.itemClicked.connect(self.handle_cam_table_item_clicked)
-        
 
         # Determining when to enable things
         self.is_testbed_selected = False
@@ -124,9 +112,6 @@ class CalibrationGUI(Plugin):
         self._widget.pictureButton.setEnabled(False)
         self._widget.cameraPoseButton.setEnabled(False)
         self._widget.zDistSpinBox.setEnabled(False)
-        #self._widget.xSpinBox.setEnabled(False)
-        #self._widget.ySpinBox.setEnabled(False)
-        #self._widget.zSpinBox.setEnabled(False)
         self._widget.markCompleteButton.setEnabled(False)
         self._widget.upperLeftButton.setEnabled(False)
         self._widget.upperRightButton.setEnabled(False)
@@ -367,9 +352,6 @@ class CalibrationGUI(Plugin):
         self._widget.saveCalibButton.setEnabled(camera_pose_enabled and self.is_camera_pose_calibrated)
 
         touchpt_section_enabled = self.is_camera_pose_calibrated and self.is_mark_complete and (not self.is_import_calib_clicked)
-        #self._widget.xSpinBox.setEnabled(touchpt_section_enabled)
-        #self._widget.ySpinBox.setEnabled(touchpt_section_enabled)
-        #self._widget.zSpinBox.setEnabled(touchpt_section_enabled)
         self._widget.upperLeftButton.setEnabled(touchpt_section_enabled)
         self._widget.upperRightButton.setEnabled(touchpt_section_enabled)
         self._widget.lowerLeftButton.setEnabled(touchpt_section_enabled)
@@ -531,18 +513,6 @@ class CalibrationGUI(Plugin):
         self.z_dist = new_value
 
         self.update_z_dist_in_camera_matrices(self.z_dist)
-
-#    def handle_initial_guess_x_spinbox_change(self, new_value):
-#        self.arm_initial_guess[0] = new_value
-#        print(self.arm_initial_guess)
-#
-#    def handle_initial_guess_y_spinbox_change(self, new_value):
-#        self.arm_initial_guess[1] = new_value
-#        print(self.arm_initial_guess)
-#
-#    def handle_initial_guess_z_spinbox_change(self, new_value):
-#        self.arm_initial_guess[2] = new_value
-#        print(self.arm_initial_guess)
 
     def handle_testbed_change(self, i):
         if i != 0:
