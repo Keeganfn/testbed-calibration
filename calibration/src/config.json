@@ -3,7 +3,7 @@
     "robot_base_link": "j2s7s300_link_base",
     "robot_end_effector" : "j2s7s300_end_effector",
     "testbed_name_options": ["reset_mechanism", "testbed name 2"],
-    "testbed_size": [0.5,0.5],
+    "testbed_size": [0.51,0.76],
     "checkerboard_rows_default": 9,
     "checkerboard_cols_default": 6,
     "aruco_sidelength": 0.036,

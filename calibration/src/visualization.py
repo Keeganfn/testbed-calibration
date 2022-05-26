@@ -126,9 +126,9 @@ class VisualizeResult:
         camera.type = camera.CUBE
         camera.id = 1
         camera.action = camera.ADD
-        camera.scale.x = .2
-        camera.scale.y = .2
-        camera.scale.z = .2
+        camera.scale.x = .1
+        camera.scale.y = .1
+        camera.scale.z = .1
         camera.color.r = 0
         camera.color.g = 0
         camera.color.b = 1
