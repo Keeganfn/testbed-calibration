@@ -1,5 +1,8 @@
 [GitHub Repo Link](https://github.com/Keeganfn/testbed-calibration)
 
+<h2>Software Required</h2>
+ - 
+
 <h2>Setup</h2>
 Clone this package in your ROS workspace: http://wiki.ros.org/catkin/Tutorials/create_a_workspace
 
@@ -72,3 +75,23 @@ https://doc.qt.io/qtforpython-5/PySide2/QtWidgets/index.html
 ### Making Changes
 
 For more information about the camera calibration, refer to OpenCV documentation. Some useful links include [Internal Camera Calibration Tutorial](https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html), [Pose Estimation Tutorial](https://docs.opencv.org/4.x/d7/d53/tutorial_py_pose.html), [AruCo Pose Estimation](https://docs.opencv.org/4.x/d9/d6a/group__aruco.html#ga84dd2e88f3e8c3255eb78e0f79571bd1)
+
+
+<h2>Arm Calibration</h2>
+
+### Important Files:
+
+    
+### Making Changes
+
+<h2>Visulization</h2>
+
+### Important Files:
+
+    
+### Making Changes
+
+
+<h2>Unrealized Features</h2>
+ - 
+
