@@ -80,10 +80,20 @@ For more information about the camera calibration, refer to OpenCV documentation
 <h2>Arm Calibration</h2>
 
 ### Important Files:
-
-    
+- ```calibration/src/arm_calibration.py``` – functionality to calibrate the robot arm in the test environment
+    <br>
+    <br> ```self.calibrate_arm(tp_data)``` - This function returns a calibrated transformation matrix from the center of the testbed to the robot arm base.
+    <br> ```self.__getTranslations(tp_data)``` - Returns 4 arrays (Based off the 4 touchpoints) containing the XYZ coordinates of the end effector positions in the world frame.
+    <br> ```self.__calibrateTranslations(arr_translations)``` - Calibrates the XYZ location of the center of the testbed from the robot arm base.
+    <br> ```self.__calibrateRotations(arr_translations)``` - Calibrates the rotation portion of the transformation matrix.
+    <br> ```self.__updateTransMatrix(arr_translations)``` - Creates a calibrated transformation matrix from the robot arm base to the center of the table.
+    <br> ```self.__recordTouchpoint(id)``` - Records the end effector location in the world frame. Stores transformation matrix in tp_data.
+    <br> ```self.record_touchpoint_srv_callback(request)``` - The callback used by the GUI to collect the touchpoint data for a specific touchpoint id.
+    <br> ```self.arm_calibration_srv_callback(request)``` - The callback used by the GUI to calculate the final transform matrix.
 ### Making Changes
-
+Editing this file may require the developer to have an understanding of numpy and tf. Documentation can be found here:
+<br>https://numpy.org/doc/stable/user/index.html#user
+<br>http://wiki.ros.org/tf
 <h2>Visulization</h2>
 
 ### Important Files:
