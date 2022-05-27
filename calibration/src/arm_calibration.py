@@ -17,15 +17,8 @@ class ArmCalibration:
         #service for arm calibration
         self.calibration_result_service = rospy.Service("arm_calibration_srv", ArmCalibrationSRV, self.arm_calibration_srv_callback)
 
+        # Dictionary to hold the transformation matrices from each touchpoint. Key: 0-4 (Touchpoint #), Value: Transform Matrix from enf effector - base.
         self.tp_data = dict()
-    
-
-        print("Calling calibrate_arm:")
-        #self.calibrate_arm(self.tp_data, [0.6,0,0])
-
-
-
-
 
     # *******************************************************************************************
     # @params: tp_data: dict object containing 4 Transformation matrices: One for each touchpoint.
@@ -40,78 +33,55 @@ class ArmCalibration:
     #            1: [<Trans_matrix>],
     #            2: [<Trans_matrix>],
     #            3: [<Trans_matrix>]}
-    #
+    # 
     # @returns: a calibrated Transofmration matrix of the Robot arm's base in the world coordinate
     # frame.
     # *******************************************************************************************
-    def calibrate_arm(self, tp_data, initial_guess):
+    def calibrate_arm(self, tp_data):
+
+        # returns a 2D array containing the translation portions of each touchpoint transform matrix.
+        arr_translations = self.__getTranslations(tp_data)
         
-        #x = initial_guess[0] or -.597
-        #y = initial_guess[1] or 0
-        #z = initial_guess[2] or .035
-
-
-        x = initial_guess[0] or 0
-        y = initial_guess[1] or 0
-        z = initial_guess[2] or 0
-
-        # Estimated Transformation Matrix: Origin -> Robot arm Base
-        estOriginToBase = np.array([
-        [1, 0, 0, x],
-        [0, 1, 0, y],
-        [0, 0, 1, z],
-        [0, 0, 0, 1]])
-
-        print("initial guess matrix:")
-        print(estOriginToBase)
-
-        arr_translations = self.__getTranslations(estOriginToBase, tp_data)
-        print(arr_translations)
+        # Returns a calibrated transformation matrix from the robot arm base to the center of the testbed.
+        newMatrix = self.__updateTransMatrix(arr_translations)
         
-        newMatrix = self.__updateTransMatrix(arr_translations, estOriginToBase)
-        
-        print("Final Matrix (After inverse):")
+        print("Final Matrix:")
         print(newMatrix)
 
-        # returns the transform matrix flattened to 1D array
+        # returns the transform matrix flattened to a 1D array
         return newMatrix.flatten()
 
-    # Returns a 1x4 vector containing the XYZ coordinates of the end effector in the world frame.
-    def __getEndEffInWorld(self, originToBase, endEffToBase):
-
-        test = np.matmul(originToBase, endEffToBase)
-        endEffInWorld = np.matmul(test, np.transpose([0, 0, 0, 1]))
-
-        return endEffInWorld
     
     # Returns 4 arrays containing the XYZ coordinates of the end effector positions in the world frame.
-    def __getTranslations(self, originToBase, tp_data):
+    def __getTranslations(self, tp_data):
         
         arr_endEffInWorld = []
         
+        # Loops through each touchpoint collected, adding the X-Y-Z values to an array.
         for i in range(0, len(tp_data)):
-            #endEffCoords = self.__getEndEffInWorld(originToBase, tp_data[i])
             endEffCoords = np.array([tp_data[i][0][-1], tp_data[i][1][-1], tp_data[i][2][-1], 1])
             arr_endEffInWorld.append(endEffCoords)
 
         return arr_endEffInWorld
 
 
-    # Calibrates the XYZ location of the robot arm base in the world frame.
+    # Calibrates the XYZ location of the center of the testbed from the robot arm base.
     def __calibrateTranslations(self, arr_translations):
 
         x = 0
         y = 0
         z = 0
         
-        #print(hello)
+        # arr_len = 4, there are 4 touchpoints.
         arr_len = len(arr_translations)
 
+        # Next, we average the X, Y, and Z components separately.
         for i in range(arr_len):
             x += arr_translations[i][0]
             y += arr_translations[i][1]
             z += arr_translations[i][2]
 
+        # Store averaged XYZ components in these variables.
         dx = x / arr_len
         dy = y / arr_len
         dz = z / arr_len
@@ -121,33 +91,30 @@ class ArmCalibration:
     # Calibrates the rotation portion of the transformation matrix.
     def __calibrateRotations(self, arr_translations):
 
-        print("arr_translations[0][:-1] = ")
-        print(arr_translations[0][:-1])
-        #v_12 = arr_translations[2][:-1] - arr_translations[1][:-1]
-        #v_43 = arr_translations[3][:-1] - arr_translations[0][:-1] 
+        # Creates two vectors and subtracts them together.
+        # These two vectors are the top-left - bottom-left rouchpoint,
+        # and the top-rght - bottom-right tocuhpoint.
+        # This gives us the x-vector.
         v_12 = arr_translations[1][:-1] - arr_translations[0][:-1]
         v_43 = arr_translations[2][:-1] - arr_translations[3][:-1]
         x_vec = (v_12 + v_43) / 2
-        #v_14 = arr_translations[1][:-1] - arr_translations[0][:-1]
-        #v_23 = arr_translations[2][:-1] - arr_translations[3][:-1]
+
+        # Same thing, but subtracts the bottom-right - bottom-left,
+        # and top-right - top-left. This gives us the y-vector.
         v_14 = arr_translations[3][:-1] - arr_translations[0][:-1]
         v_23 = arr_translations[2][:-1] - arr_translations[1][:-1]
         y_vec = (v_14 + v_23) / 2
 
-        #xp_vec = x_vec - np.dot(x_vec, y_vec) * y_vec
+        # Creates a y-prime vector, which is completely perpendicular to the X-vector.
         yp_vec = y_vec - np.dot(x_vec, y_vec) * x_vec
 
-        #z_vec = np.cross(y_vec, xp_vec)
+        # Performs cross-product between x and y vectors to obtain the z-vector.
         z_vec = np.cross(x_vec, yp_vec)
 
+        # Creates 4x4 identity matrix.
         rotationMatrix = np.identity(4)
 
-        rot = np.array([[0,-1,0,0],
-                        [1,0,0,0],
-                        [0,0,1,0],
-                        [0,0,0,1]])
-
-        #rotationMatrix[0][:-1] = xp_vec / np.linalg.norm(xp_vec)
+        # Creates the calibrated rotation matrix from the calculated vectors.
         rotationMatrix[0][:-1] = x_vec / np.linalg.norm(x_vec)
         rotationMatrix[1][:-1] = yp_vec / np.linalg.norm(yp_vec)
         rotationMatrix[2][:-1] = z_vec / np.linalg.norm(z_vec)
@@ -155,31 +122,29 @@ class ArmCalibration:
         print("Rotation Matrix: ")
         print(rotationMatrix)
 
-        scuffed_matrix = np.matmul(rotationMatrix,rot)
-
         return rotationMatrix
 
 
-    # Calibrates the original guess transformation matrix and returns the updated matrix.
-    def __updateTransMatrix(self, arr_translations, oldMatrix):
 
+    # Creates a calibrated transformation matrix from the robot arm base to the center of the table.
+    def __updateTransMatrix(self, arr_translations):
+
+        # Calculates the X, Y, and X distances from the robot arm base to the cetner of the table.
+        # This is calculated by averaging the X, Y, and X components from each of the 4 translations
+        # obtained from the 4 touchpoints.
         (dx, dy, dz) = self.__calibrateTranslations(arr_translations)
 
+        # Creates a new rotations matrix based off the X-Y-Z coordinates of the 4 touchpoint values.
+        # This creates a completely in-line rotation matrix from the robot arm base to the center of the table.
         newMatrix = self.__calibrateRotations(arr_translations)
 
+        # Lastly, the calculated X, Y, and Z distances are added to the matrix.
         newMatrix[0][-1] = dx
         newMatrix[1][-1] = dy
         newMatrix[2][-1] = dz
 
-        print("Calibrated Matrix before Inverse:")
-        print(newMatrix)
-
-        inverse_matrix = np.linalg.inv(newMatrix)
-        #inverse_matrix = newMatrix
         return newMatrix
-        #return inverse_matrix
 
-        #print(dx, dy, dz)
 
     
     # Records the end effector location in the world frame. Stores transformation matrix in tp_data.
@@ -195,25 +160,28 @@ class ArmCalibration:
             rospy.loginfo("CALIBRATION CONFIG NOT FOUND")
             base_frame = "j2s7s300_link_base"
             end_effector_frame = "j2s7s300_end_effector"
-            print("HERHELRHELSRHLSEKRHLERKH")
 
         listener = tf.TransformListener()
 
+        # Need to loop infinitely until the transfrom listener decides to give us the transformation matrix.
+        # uses tf to get the translation and rotation portions of the robot arm end effector to base.
+        # We then create a transform matrix out of these, saving it the tp_data dictionary.
         while True:
             try:
                 translation, rotation = listener.lookupTransform(base_frame, end_effector_frame, rospy.Time())
                 transform_mat = listener.fromTranslationRotation(translation, rotation)
 
+                # Stores the collected touchpoint transform matrix in the tp_data dictionary.
                 self.tp_data[id] = transform_mat
-                print("Touchpoint #" + str(id) + "recorded successfully:")
+                print("Touchpoint #" + str(id) + " recorded successfully:")
                 print(transform_mat)
 
                 return True
-
+            # Keep looping until we get the transfrom matrix. Could take hundreds of iterations until success.
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 continue
 
-
+    # The actual callback used via ROS to collect the touchpoint data.
     def record_touchpoint_srv_callback(self, request):
         #request contains the touchpoint location the arm is at
         rospy.loginfo("LOCATION IS: {0}".format(request.location))
@@ -227,19 +195,15 @@ class ArmCalibration:
 
         return ArmRecordPointSRVResponse(success)
 
-
+    # The actual callback used by ROS to calculated the final transform matrix.
     def arm_calibration_srv_callback(self, request):
-        #rospy.loginfo("ARM ESTIMATED LOCATION: {0} {1} {2}".format(request.x, request.y, request.z))
-        #request contains the estimated location given by the user
-        initial_guess = [request.x, request.y, request.z]
-        
-        #DO CALCULATIONS HERE
-        transform_matrix = self.calibrate_arm(self.tp_data, initial_guess)
+        # Collected the calibrated transfrom matrix.
+        transform_matrix = self.calibrate_arm(self.tp_data)
 
         #should return these variables, step represents the dimension of the matrix (2d not supported), ie step=3 is a 3x3
         transform_matrix_step = 4
 
-        #transform_matrix = [1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4]
+        # returned transformation matrix is falttened to 1D array. Can't send 2D array back.
         return ArmCalibrationSRVResponse(transform_matrix_step, transform_matrix)
     
 
