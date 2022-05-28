@@ -1,29 +1,32 @@
 [GitHub Repo Link](https://github.com/Keeganfn/testbed-calibration)
 
 <h2>Software Required</h2>
- - 
+ - A full install of ROS Melodic (Important note, this is only supported on Ubuntu 18.04) - http://wiki.ros.org/melodic/Installation/Ubuntu
 
-<h2>Setup</h2>
-Clone this package in your ROS workspace: http://wiki.ros.org/catkin/Tutorials/create_a_workspace
+### Setup
+1. Clone this package in your ROS workspace: http://wiki.ros.org/catkin/Tutorials/create_a_workspace
+2. Install catkin build if you do not have it already (use catkin build instead of catkin_make): https://catkin-tools.readthedocs.io/en/latest/installing.html
+3. Install the video_stream_opencv package - ```sudo apt-get install ros-melodic-video-stream-opencv```
 
-Also install catkin build (use catkin build instead of catkin_make): https://catkin-tools.readthedocs.io/en/latest/installing.html
+<h2>USAGE<h2>
 
+## Generic Arm
+1. Plug in the Robot Arm and Camera to your computer.
+2. Start Arm communication.
+3. Start an Rviz environment with the robot arm. 
+4. Edit the config.json file in the src/ directory to include the arm base link. (If this step is not completed the calibration will default to the world frame.) 
 
+## Kinova Arm
+1. Follow the Kinova setup instructions: https://drive.google.com/file/d/12eizcm0FJI3dnjX7HDMKFX5gtys5OQAb/view?usp=sharing (Written by Nuha Nishat)
+2. Make sure you have an RVIZ window with the Kinova arm that mirrors the current Kinova position. 
 
-<h2>Basic ROS Usage</h2>
-
-### NEED TO START LIKE THIS NOW ON MAIN BRANCH
+## Calibration
 1. Open 2 terminals and plug in webcam.
-2. Enter ```roslaunch calibration testbed_calibration.launch```
-3. In second terminal either use ```rqt --standalone calibration``` or ```rqt``` if you want to see the camera feed. 
-
-
-If anything breaks, run:<br>
-<code>catkin clear</code><br>
-and rebuild the workspace again<br>
-<code>catkin build</code>
-
-
+2. Enter ```roslaunch calibration testbed_calibration.launch``` 
+3. Depending on the workstation and camera you are using you may get an error and need to change the video_device integer parameter in order to correctly recieve the camera feed ```roslaunch calibration testbed_calibration.launch video_device:=<NUMBER>```. Current default is 3 for the reset mechanism testbed. 
+4. In second terminal enter ```rqt --standalone calibration```. If you would like to see the camera feed instead run ```rqt``` and select calibration plugin and the image viewer plugin. Set the image viewer plugin to topic ```/camera_1/image_raw```.
+5. Follow GUI instructions for Calibration.
+6. After you have clicked the button "Display Results" you will need to add the testbed_marker and camera_marker in rviz to see the finished result. You can do this by clicking "add" then "by topic" and selecting the /testbed_marker and /camera_marker topics.
 
 
 <h2>GUI</h2>
@@ -94,14 +97,28 @@ For more information about the camera calibration, refer to OpenCV documentation
 Editing this file may require the developer to have an understanding of numpy and tf. Documentation can be found here:
 <br>https://numpy.org/doc/stable/user/index.html#user
 <br>http://wiki.ros.org/tf
+
 <h2>Visulization</h2>
 
 ### Important Files:
-
+- ```calibration/src/visualization.py``` – Publishes tf frames and markers for the testbed and camera in relation to the arm frame.
+    <br>
+    <br> ```self.display_result_srv_callback(self, request)``` - SRV callback that triggers us to publish tf frames and markers. request passes in the arm_to_table matrix and the table_to_camera matrix
+    <br> ```self.pub_testbed_frame()``` - Publishes the tf frame for the testbed in relation to the arm base frame.
+    <br> ```self.pub_camera_frame()``` - Publishes the tf frame for the camera in relation to the testbed frame.
+    <br> ```self.pub_testbed_marker() ``` - Publishes the testbed marker at the origin of the testbed frame
+    <br> ```self.pub_camera_marker() ``` - Publishes the camera marker at the origin of the camera frame
+    <br> ```self.show_result()``` - Calls above four function to continually publish tf frames and markers..
     
 ### Making Changes
+Editing this file may require the developer to have an understanding of numpy, tf, ROS and Rviz. Documentation can be found here:
+<br>https://numpy.org/doc/stable/user/index.html#user
+<br>http://wiki.ros.org/tf
 
 
 <h2>Unrealized Features</h2>
- - 
+ 
+ - Multiple camera support (Cameras in multiple positions)
+ 
+ - Non planar testbeds 
 
